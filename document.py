@@ -18,13 +18,17 @@ class Document:
     meta = None
 
     def __init__(self, **kwargs):
-        _id = kwargs.pop('_id', None)
+        self._id = kwargs.pop('_id', None)
         for key, value in kwargs.items():
             field = object.__getattribute__(self, key)
             if field:
                 field.set_value(value)
-        self.fields = tuple(kwargs.keys())
-        self._id = _id
+
+        # discover class fields
+        self.fields = list(filter(
+            lambda x: isinstance(object.__getattribute__(self, x), Field),
+            dir(self)
+        ))
 
     def __getattribute__(self, name):
         attribute = object.__getattribute__(self, name)
@@ -38,6 +42,8 @@ class Document:
         except AttributeError:
             attribute = None
         if attribute and isinstance(attribute, Field):
+            if name not in self.fields:
+                self.fields.append(name)
             return attribute.set_value(value)
         return object.__setattr__(self, name, value)
 
@@ -141,7 +147,13 @@ class EmailField(StringField):
         return True
 
 
+class IntegerField(Field):
+    def is_valid(self) -> bool:
+        return isinstance(self.value, int)
+
+
 class User(Document):
     collection = 'user'
     name = StringField(maxlen=255)
     email = EmailField(maxlen=512)
+    age = IntegerField()
