@@ -55,6 +55,17 @@ class Document:
             return self.cursor.find_one(match)
         return self.cursor.find(match)
 
+    def refresh(self):
+        """Reload the current id from the database, if no id is available a
+        ValueError will be raised.
+        """
+        if not self._id:
+            raise ValueError('id')
+        response: dict = self.cursor.find_one({'_id': self._id})
+        for k in self.fields:
+            setattr(self, k, response.get(k))
+        return self
+
     @property
     def cursor(self) -> pymongo.database.Collection:
         return db[self.collection]
