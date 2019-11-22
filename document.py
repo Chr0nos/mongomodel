@@ -8,16 +8,23 @@ client = pymongo.MongoClient(host='10.8.0.1')
 db: pymongo.database.Database = client.test
 
 
+class DocumentNotFoundError(Exception):
+    pass
+
+
 class Document:
     _id: ObjectId = None
     collection: str = None
     meta = None
 
     def __init__(self, **kwargs):
+        _id = kwargs.pop('_id', None)
         for key, value in kwargs.items():
             field = object.__getattribute__(self, key)
-            field.set_value(value)
+            if field:
+                field.set_value(value)
         self.fields = tuple(kwargs.keys())
+        self._id = _id
 
     def __getattribute__(self, name):
         attribute = object.__getattribute__(self, name)
@@ -97,6 +104,14 @@ class Document:
                 invalids.append(field_name)
         return invalids
 
+    @classmethod
+    def from_id(cls, document_id: ObjectId):
+        resource = db[cls.collection].find_one({'_id': document_id})
+        if not resource:
+            raise DocumentNotFoundError
+        document = cls(**resource)
+        return document
+
 
 class Field:
     value = None
@@ -121,7 +136,7 @@ class EmailField(StringField):
     def is_valid(self) -> bool:
         if not super().is_valid():
             return False
-        if not re.match(r'[\w]+@[\w]+', self.value):
+        if not re.match(r'^[\w]+@[\w]+\.[\w+]{1,3}$', self.value):
             return False
         return True
 
