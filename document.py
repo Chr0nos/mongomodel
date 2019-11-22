@@ -1,3 +1,4 @@
+from typing import List
 from bson import ObjectId
 import pymongo
 import re
@@ -74,6 +75,8 @@ class Document:
         return dict({k: getattr(self, k) for k in self.fields})
 
     def raw_attr(self, name):
+        """Allow retrive of a raw field attribute instead of it's value
+        """
         return object.__getattribute__(self, name)
 
     def is_valid(self) -> bool:
@@ -82,6 +85,17 @@ class Document:
             if not field.is_valid():
                 return False
         return True
+
+    def invalid_fields(self) -> List[str]:
+        """Return a list of all invalid fields for this document.
+        in case of a valid document then an empty list will be returned.
+        """
+        invalids = []
+        for field_name in self.fields:
+            field = self.raw_attr(field_name)
+            if not field.is_valid():
+                invalids.append(field_name)
+        return invalids
 
 
 class Field:
