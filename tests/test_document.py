@@ -113,15 +113,12 @@ class TestDocument:
         find_one.assert_called_once_with(test_doc)
         assert response == test_doc
 
-
-class TestField:
-    def test_is_valid(self):
-        field = Field()
-        assert field.is_valid()
-
-    @pytest.mark.parametrize('value', ('yes', 42, False, None))
-    def test_set_value(self, value):
-        field = Field()
-        field.set_value(value)
-        assert field.value == value
+    @patch('document.db')
+    def test_fields_discovery(self, mock_db):
+        mock_db.__getitem__.return_value = None
+        doc = Document()
+        assert doc.fields == []
+        doc.name = Field()
+        doc.fields_discover()
+        assert doc.fields == ['name']
 

@@ -3,6 +3,7 @@ from bson import ObjectId
 import pymongo
 import re
 # from . import db
+from field import Field
 
 client = pymongo.MongoClient(host='10.8.0.1', connect=False)
 db: pymongo.database.Database = client.test
@@ -67,7 +68,7 @@ class Document:
         return self.cursor.update_one({'_id': self._id}, self.to_dict())
 
     def delete(self):
-        if not self._id:
+        if self._id is None:
             return
         response = self.cursor.delete_one({'_id': self._id})
         self._id = None
@@ -129,45 +130,3 @@ class Document:
         func = getattr(db[cls.collection], 'find' if not one else 'find_one')
         return func(match, **kwargs)
 
-
-class Field:
-    value = None
-
-    def set_value(self, value):
-        self.value = value
-
-    def is_valid(self):
-        return True
-
-
-class StringField(Field):
-    def __init__(self, maxlen=None):
-        self.maxlen = maxlen
-
-    def is_valid(self) -> bool:
-        if not isinstance(self.value, str):
-            return False
-        if not self.maxlen:
-            return True
-        return len(self.value) <= self.maxlen
-
-
-class EmailField(StringField):
-    def is_valid(self) -> bool:
-        if not super().is_valid():
-            return False
-        if not re.match(r'^[\w]+@[\w]+\.[\w+]{1,3}$', self.value):
-            return False
-        return True
-
-
-class IntegerField(Field):
-    def is_valid(self) -> bool:
-        return isinstance(self.value, int)
-
-
-class User(Document):
-    collection = 'user'
-    name = StringField(maxlen=255)
-    email = EmailField(maxlen=512)
-    age = IntegerField()
