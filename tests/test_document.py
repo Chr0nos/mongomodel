@@ -2,6 +2,7 @@ import pytest
 from mock import patch, MagicMock
 
 from document import Document, Field, DocumentInvalidError
+from datetime import datetime
 
 
 class TestDocument:
@@ -89,7 +90,6 @@ class TestDocument:
         find_one.return_value = {'test': True}
         doc = Document(_id=42)
         doc.test = Field()
-        doc.fields_discover()
         doc.refresh()
         find_one.assert_called_once_with({'_id': 42})
         assert doc.test == True
@@ -114,11 +114,26 @@ class TestDocument:
         assert response == test_doc
 
     @patch('document.db')
-    def test_fields_discovery(self, mock_db):
+    def test_fields_append(self, mock_db):
         mock_db.__getitem__.return_value = None
         doc = Document()
         assert doc.fields == []
-        doc.name = Field()
-        doc.fields_discover()
-        assert doc.fields == ['name']
+        doc.name = Field(default=lambda: 'alpha')
+        doc.age = Field(default=lambda: 'bravo')
+        assert doc.fields == ['name', 'age']
+        assert doc.name == 'alpha'
+        assert doc.age == 'bravo'
 
+    @patch('document.db')
+    def test_to_dict(self, mock_db):
+        mock_db.__getitem__.return_value = None
+        doc = Document()
+        doc.collection = 'test'
+        doc.creation_date = Field(default=lambda: datetime.now().isoformat())
+        doc.name = Field()
+        doc.name = 'tomtom'
+        doc_dict = doc.to_dict()
+        assert 'creation_date' in doc_dict
+        assert 'collection' not in doc_dict
+        assert doc_dict['name'] == 'tomtom'
+        assert len(doc_dict) == 2
