@@ -36,7 +36,7 @@ class Document:
         ))
 
     def __getattribute__(self, name):
-        attribute = object.__getattribute__(self, name)
+        attribute = super().__getattribute__(name)
         if isinstance(attribute, Field):
             return attribute.get()
         return attribute
@@ -52,7 +52,7 @@ class Document:
                 self.fields.append(name)
             attribute.set_value(value)
             return
-        object.__setattr__(self, name, value)
+        super().__setattr__(name, value)
         if isinstance(value, Field) and name not in self.fields:
             self.fields.append(name)
 
