@@ -74,6 +74,9 @@ class Document:
         return self.cursor.update_one({'_id': self._id}, self.to_dict())
 
     def delete(self):
+        """Remove the current document from the database if already present
+        the _id is used to know if the document is in db.
+        """
         if self._id is None:
             return
         response = self.cursor.delete_one({'_id': self._id})
@@ -101,7 +104,7 @@ class Document:
     def raw_attr(self, name):
         """Allow retrive of a raw field attribute instead of it's value
         """
-        return object.__getattribute__(self, name)
+        return super().__getattribute__(name)
 
     def is_valid(self) -> bool:
         for field_name in self.fields:
