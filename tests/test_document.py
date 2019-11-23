@@ -1,7 +1,8 @@
 import pytest
 from mock import patch, MagicMock, Mock
 
-from document import Document, Field, DocumentInvalidError
+from document import (
+    Document, Field, DocumentInvalidError, DocumentNotFoundError)
 from datetime import datetime
 
 from functools import wraps
@@ -58,12 +59,26 @@ class TestDocument:
         assert isinstance(doc, Document)
 
     @patch('document.db')
+    def test_from_unknow_id(self, mock_db):
+        mock_db.__getitem__.return_value.find_one.return_value = None
+        with pytest.raises(DocumentNotFoundError):
+            Document.from_id('test')
+
+    @patch('document.db')
     def test_save_new(self, mock_db):
         insert: MagicMock = mock_db.__getitem__.return_value.insert_one
         insert.return_value.inserted_id.return_value = 42
         doc = Document()
         doc.save()
         insert.assert_called_once_with({})
+
+    @patch('document.db')
+    def test_save_old(self, mock_db):
+        update: MagicMock = mock_db.__getitem__.return_value.update_one
+        doc = Document(_id='test')
+        doc.save()
+        update.assert_called_once()
+        assert doc._id == 'test'
 
     @no_database
     def test_save_invalid(self):
