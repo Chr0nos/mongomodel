@@ -137,3 +137,20 @@ class TestDocument:
         assert 'collection' not in doc_dict
         assert doc_dict['name'] == 'tomtom'
         assert len(doc_dict) == 2
+
+    @patch('document.db')
+    def test_del_field_attribute(self, mock_db):
+        mock_db.__getitem__.return_value = None
+
+        class Vector(Document):
+            def __init__(self, **kwargs):
+                self.x = Field()
+                self.y = Field()
+                super().__init__(**kwargs)
+
+        vec = Vector()
+        assert 'x' in vec.fields
+        assert 'y' in vec.fields
+        del vec.x
+        assert 'x' not in vec.fields
+        assert 'y' in vec.fields

@@ -20,16 +20,13 @@ class DocumentInvalidError(Exception):
 class Document:
     _id: ObjectId = None
     collection: str = None
+    fields: List[str] = []
 
     def __init__(self, **kwargs):
         self._id = kwargs.pop('_id', None)
-        for key, value in kwargs.items():
-            try:
-                field = object.__getattribute__(self, key)
-                field.set_value(value)
-            except AttributeError:
-                pass
         self.fields_discover()
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def fields_discover(self):
         # discover class fields
@@ -58,6 +55,11 @@ class Document:
         object.__setattr__(self, name, value)
         if isinstance(value, Field) and name not in self.fields:
             self.fields.append(name)
+
+    def __delattr__(self, name):
+        if name in self.fields:
+            self.fields.remove(name)
+        super().__delattr__(name)
 
     def save(self):
         """Update or insert the current document to the database if needed
