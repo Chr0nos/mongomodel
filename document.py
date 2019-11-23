@@ -22,11 +22,14 @@ class Document:
     collection: str = None
     fields: List[str] = []
 
-    def __init__(self, **kwargs):
+    def __init__(self, collection=None, **kwargs):
         self._id = kwargs.pop('_id', None)
         self.fields_discover()
+        if collection:
+            self.collection = collection
         for key, value in kwargs.items():
             setattr(self, key, value)
+        self.cursor = db[self.collection]
 
     def fields_discover(self):
         # discover class fields
@@ -93,10 +96,6 @@ class Document:
         for k in self.fields:
             setattr(self, k, response.get(k))
         return self
-
-    @property
-    def cursor(self) -> pymongo.database.Collection:
-        return db[self.collection]
 
     def to_dict(self) -> dict:
         return dict({k: getattr(self, k) for k in self.fields})

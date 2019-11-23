@@ -1,8 +1,21 @@
 import pytest
-from mock import patch, MagicMock
+from mock import patch, MagicMock, Mock
 
 from document import Document, Field, DocumentInvalidError
 from datetime import datetime
+
+from functools import wraps
+
+
+def no_database(func):
+    """Mock the main collection resolution for the database access
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with patch('document.db.__getitem__') as collection:
+            collection.return_value = None
+            func(*args, **kwargs)
+    return wrapper
 
 
 class TestDocument:
@@ -12,20 +25,17 @@ class TestDocument:
 
         User()
 
-    @patch('document.db')
-    def test_document_with_kwargs(self, mock_db):
-        mock_db.__getitem__.return_value = None
-
+    @no_database
+    def test_document_with_kwargs(self):
         class User(Document):
+            collection = 'test'
             name = Field()
 
         user = User(name='toto')
         assert user.name == 'toto'
 
-    @patch('document.db')
-    def test_fields_resolution(self, mock_db):
-        mock_db.__getitem__.return_value = None
-
+    @no_database
+    def test_fields_resolution(self):
         class TestDocument(Document):
             collection = 'test'
             name = Field()
@@ -55,17 +65,16 @@ class TestDocument:
         doc.save()
         insert.assert_called_once_with({})
 
-    @patch('document.db')
-    def test_save_invalid(self, mock_db):
-        mock_db.__getitem__.return_value = None
-        doc = Document()
+    @no_database
+    def test_save_invalid(self):
+        doc = Document(collection='test')
         doc.is_valid = lambda: False
         with pytest.raises(DocumentInvalidError):
             doc.save()
 
-    @patch('document.db')
-    def test_delete_unknow(self, mock_db):
-        doc = Document()
+    @no_database
+    def test_delete_unknow(self):
+        doc = Document(collection='test')
         assert doc.delete() is None
 
     @patch('document.db')
@@ -77,10 +86,9 @@ class TestDocument:
         assert doc._id is None
         delete_one.assert_called_once_with({'_id': 'foo'})
 
-    @patch('document.db')
-    def test_refresh_without_id(self, mock_db):
-        mock_db.__getitem__.return_value = None
-        doc = Document()
+    @no_database
+    def test_refresh_without_id(self):
+        doc = Document(collection='test')
         with pytest.raises(ValueError):
             doc.refresh()
 
@@ -113,10 +121,9 @@ class TestDocument:
         find_one.assert_called_once_with(test_doc)
         assert response == test_doc
 
-    @patch('document.db')
-    def test_fields_append(self, mock_db):
-        mock_db.__getitem__.return_value = None
-        doc = Document()
+    @no_database
+    def test_fields_append(self):
+        doc = Document(collection='test')
         assert doc.fields == []
         doc.name = Field(default=lambda: 'alpha')
         doc.age = Field(default=lambda: 'bravo')
@@ -124,11 +131,9 @@ class TestDocument:
         assert doc.name == 'alpha'
         assert doc.age == 'bravo'
 
-    @patch('document.db')
-    def test_to_dict(self, mock_db):
-        mock_db.__getitem__.return_value = None
-        doc = Document()
-        doc.collection = 'test'
+    @no_database
+    def test_to_dict(self):
+        doc = Document(collection='test')
         doc.creation_date = Field(default=lambda: datetime.now().isoformat())
         doc.name = Field()
         doc.name = 'tomtom'
@@ -138,11 +143,11 @@ class TestDocument:
         assert doc_dict['name'] == 'tomtom'
         assert len(doc_dict) == 2
 
-    @patch('document.db')
-    def test_del_field_attribute(self, mock_db):
-        mock_db.__getitem__.return_value = None
-
+    @no_database
+    def test_del_field_attribute(self):
         class Vector(Document):
+            collection = 'test'
+
             def __init__(self, **kwargs):
                 self.x = Field()
                 self.y = Field()
