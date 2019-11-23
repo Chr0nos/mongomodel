@@ -4,7 +4,7 @@ import pymongo
 import re
 # from . import db
 
-client = pymongo.MongoClient(host='10.8.0.1')
+client = pymongo.MongoClient(host='10.8.0.1', connect=False)
 db: pymongo.database.Database = client.test
 
 
@@ -12,18 +12,25 @@ class DocumentNotFoundError(Exception):
     pass
 
 
+class DocumentInvalidError(Exception):
+    pass
+
+
 class Document:
     _id: ObjectId = None
     collection: str = None
-    meta = None
 
     def __init__(self, **kwargs):
         self._id = kwargs.pop('_id', None)
         for key, value in kwargs.items():
-            field = object.__getattribute__(self, key)
-            if field:
+            try:
+                field = object.__getattribute__(self, key)
                 field.set_value(value)
+            except AttributeError:
+                pass
+        self.fields_discover()
 
+    def fields_discover(self):
         # discover class fields
         self.fields = list(filter(
             lambda x: isinstance(object.__getattribute__(self, x), Field),
@@ -51,6 +58,8 @@ class Document:
         """Update or insert the current document to the database if needed
         then return the response from the database
         """
+        if not self.is_valid():
+            raise DocumentInvalidError
         if not self._id:
             response = self.cursor.insert_one(self.to_dict())
             self._id = response.inserted_id
@@ -60,14 +69,9 @@ class Document:
     def delete(self):
         if not self._id:
             return
-        return self.cursor.delete_one({'_id': self._id})
-
-    def find(self, match: dict = None, one=True):
-        if match is None:
-            match = {}
-        if one:
-            return self.cursor.find_one(match)
-        return self.cursor.find(match)
+        response = self.cursor.delete_one({'_id': self._id})
+        self._id = None
+        return response
 
     def refresh(self):
         """Reload the current id from the database, if no id is available a
@@ -118,12 +122,22 @@ class Document:
         document = cls(**resource)
         return document
 
+    @classmethod
+    def find(cls, match=None, one=False, **kwargs):
+        if match is None:
+            match = {}
+        func = getattr(db[cls.collection], 'find' if not one else 'find_one')
+        return func(match, **kwargs)
+
 
 class Field:
     value = None
 
     def set_value(self, value):
         self.value = value
+
+    def is_valid(self):
+        return True
 
 
 class StringField(Field):
