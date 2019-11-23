@@ -41,7 +41,7 @@ class Document:
     def __getattribute__(self, name):
         attribute = object.__getattribute__(self, name)
         if isinstance(attribute, Field):
-            return attribute.value
+            return attribute.get()
         return attribute
 
     def __setattr__(self, name, value):
@@ -49,11 +49,15 @@ class Document:
             attribute = self.raw_attr(name)
         except AttributeError:
             attribute = None
+        # updaging a current field
         if attribute and isinstance(attribute, Field):
             if name not in self.fields:
                 self.fields.append(name)
-            return attribute.set_value(value)
-        return object.__setattr__(self, name, value)
+            attribute.set_value(value)
+            return
+        object.__setattr__(self, name, value)
+        if isinstance(value, Field) and name not in self.fields:
+            self.fields.append(name)
 
     def save(self):
         """Update or insert the current document to the database if needed
@@ -129,4 +133,3 @@ class Document:
             match = {}
         func = getattr(db[cls.collection], 'find' if not one else 'find_one')
         return func(match, **kwargs)
-
