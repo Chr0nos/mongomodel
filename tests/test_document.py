@@ -1,5 +1,5 @@
 import pytest
-from mock import patch, MagicMock, Mock
+from mock import patch, MagicMock
 
 from document import (
     Document, Field, DocumentInvalidError, DocumentNotFoundError)
@@ -115,7 +115,7 @@ class TestDocument:
         doc.test = Field()
         doc.refresh()
         find_one.assert_called_once_with({'_id': 42})
-        assert doc.test == True
+        assert doc.test is True
 
     @patch('document.db')
     def test_find(self, mock_db):

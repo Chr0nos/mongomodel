@@ -46,5 +46,3 @@ class EmailField(StringField):
 class IntegerField(Field):
     def is_valid(self) -> bool:
         return isinstance(self.get(), int)
-
-

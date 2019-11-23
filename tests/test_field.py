@@ -26,26 +26,27 @@ class TestStringField:
     def test_invalid(self, item):
         field = StringField(maxlen=42)
         field.set_value(item)
-        assert field.is_valid() == False
+        assert field.is_valid() is False
 
     def test_too_long(self):
         field = StringField(maxlen=10)
         field.set_value('-' * 10)
         assert field.is_valid()
         field.set_value('-' * 11)
-        assert field.is_valid() == False
+        assert field.is_valid() is False
 
     def test_without_maxlen(self):
         field = StringField()
         field.set_value('-' * 512)
         assert field.is_valid()
 
+
 class TestEmailField:
     @pytest.mark.parametrize('email', (
-        'test@free.fr',
-        'thing@gmail.be',
-    #    'author@student.42.fr',
-        'a@b.cd'
+                                        'test@free.fr',
+                                        'thing@gmail.be',
+                                        # 'author@student.42.fr',
+                                        'a@b.cd'
     ))
     def test_valid(self, email):
         field = EmailField(maxlen=100)
@@ -62,5 +63,4 @@ class TestEmailField:
     def test_invalid(self, email):
         field = EmailField(maxlen=30)
         field.set_value(email)
-        assert field.is_valid() == False
-
+        assert field.is_valid() is False

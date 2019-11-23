@@ -1,7 +1,6 @@
 from typing import List
 from bson import ObjectId
 import pymongo
-import re
 # from . import db
 from field import Field
 
