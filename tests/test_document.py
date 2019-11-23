@@ -19,6 +19,11 @@ def no_database(func):
     return wrapper
 
 
+class InvalidField(Field):
+    def is_valid(self):
+        return False
+
+
 class TestDocument:
     def test_document_init_not_crashing(self):
         class User(Document):
@@ -174,3 +179,24 @@ class TestDocument:
         del vec.x
         assert 'x' not in vec.fields
         assert 'y' in vec.fields
+
+    @no_database
+    def test_invalid_fields(self):
+        doc = Document(collection='test')
+        doc.foo = InvalidField()
+        doc.bar = InvalidField()
+        doc.ham = Field()
+        invalid_fields = doc.invalid_fields()
+        for field_name in ('foo', 'bar'):
+            assert field_name in invalid_fields
+            invalid_fields.remove(field_name)
+        assert len(invalid_fields) == 0
+
+    @no_database
+    def test_is_valid(self):
+        doc = Document(collection='test')
+        doc.foo = Field()
+        assert doc.is_valid() is True
+        del doc.foo
+        doc.foo = InvalidField()
+        assert doc.is_valid() is False

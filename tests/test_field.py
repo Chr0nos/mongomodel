@@ -1,5 +1,5 @@
 import pytest
-from field import Field, StringField, EmailField
+from field import Field, StringField, EmailField, IntegerField
 
 
 class TestField:
@@ -64,3 +64,20 @@ class TestEmailField:
         field = EmailField(maxlen=30)
         field.set_value(email)
         assert field.is_valid() is False
+
+
+class TestIntegerField:
+    @pytest.mark.parametrize('value, valid', [
+        (0, True),
+        (1, True),
+        (-42, True),
+        (1.0, False),
+        ('Hi', False),
+        (True, False),
+        (False, False),
+        (None, False)
+    ])
+    def test_fields(self, value, valid):
+        field = IntegerField()
+        field.set_value(value)
+        assert field.is_valid() is valid

@@ -50,8 +50,6 @@ class Document:
             attribute = None
         # updaging a current field
         if attribute and isinstance(attribute, Field):
-            if name not in self.fields:
-                self.fields.append(name)
             attribute.set_value(value)
             return
         super().__setattr__(name, value)
