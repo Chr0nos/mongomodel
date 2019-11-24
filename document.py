@@ -121,16 +121,16 @@ class Document:
         return invalids
 
     @classmethod
-    def from_id(cls, document_id: ObjectId):
-        resource = db[cls.collection].find_one({'_id': document_id})
+    def from_id(cls, document_id: ObjectId, collection=None):
+        collection = collection if collection else cls.collection
+        resource = db[collection].find_one({'_id': document_id})
         if not resource:
             raise DocumentNotFoundError
-        document = cls(**resource)
+        document = cls(**resource, collection=collection)
         return document
 
-    @classmethod
-    def find(cls, match=None, one=False, **kwargs):
+    def find(self, match=None, one=False, **kwargs):
         if match is None:
             match = {}
-        func = getattr(db[cls.collection], 'find' if not one else 'find_one')
+        func = getattr(db[self.collection], 'find' if not one else 'find_one')
         return func(match, **kwargs)

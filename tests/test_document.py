@@ -126,7 +126,7 @@ class TestDocument:
     def test_find(self, mock_db):
         find = mock_db.__getitem__.return_value.find
         find.return_value = [{'_id': docid} for docid in range(10)]
-        response = list(Document.find())
+        response = list(Document(collection='test').find())
         assert len(response) == 10
         for index, doc_dict in enumerate(response):
             assert doc_dict['_id'] == index
@@ -137,7 +137,7 @@ class TestDocument:
         test_doc = {'_id': 54266}
         find_one = mock_db.__getitem__.return_value.find_one
         find_one.return_value = test_doc
-        response = Document.find(match=test_doc, one=True)
+        response = Document(collection='test').find(match=test_doc, one=True)
         find_one.assert_called_once_with(test_doc)
         assert response == test_doc
 
