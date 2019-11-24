@@ -1,6 +1,7 @@
 import pytest
 from mock import patch, MagicMock
 
+from bson import ObjectId
 from document import (
     Document, Field, DocumentInvalidError, DocumentNotFoundError)
 from datetime import datetime
@@ -200,3 +201,25 @@ class TestDocument:
         del doc.foo
         doc.foo = InvalidField()
         assert doc.is_valid() is False
+
+    @patch('document.db')
+    def test_agnostic_retrive(self, db):
+        response = {
+            '_id': ObjectId(),
+            'name': 'fight club',
+            'nested': {
+                'a': [1, 2, 3],
+                'b': True
+            }
+        }
+        db.__getitem__.return_value.find_one.return_value = response
+
+        class Book(Document):
+            name = Field()
+            nested = Field()
+
+        book = Book(collection='test', _id=42)
+        book.refresh()
+        assert book.name == response['name']
+        assert book.nested['a'] == response['nested']['a']
+        assert book.nested['b'] == response['nested']['b']

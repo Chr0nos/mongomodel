@@ -2,19 +2,33 @@ import re
 
 
 class Field:
+    """A field is a basic description of a database document part,
+    a default field is allways considered as valid.
+    """
     value = None
 
-    def __init__(self, required=True, default=None):
+    def __init__(self, value=None, required=True, default=None):
         self.required = required
         self.default = default
+        self.set_value(value)
 
     def set_value(self, value):
         self.value = value
 
-    def is_valid(self):
-        return True
+    def is_valid(self) -> bool:
+        try:
+            self.check()
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    def check(self):
+        pass
 
     def get(self):
+        """Returns the current value of the field, depending of a default or
+        the real value if available.
+        """
         if self.value is None and self.default is not None:
             return self.default()
         return self.value
@@ -25,25 +39,24 @@ class StringField(Field):
         super().__init__(**kwargs)
         self.maxlen = maxlen
 
-    def is_valid(self) -> bool:
+    def check(self):
         value = self.get()
         if not isinstance(value, str):
-            return False
-        if not self.maxlen:
-            return True
-        return len(value) <= self.maxlen
+            raise TypeError(value, type(value))
+        if self.maxlen and len(value) > self.maxlen:
+            raise ValueError(value)
 
 
 class EmailField(StringField):
-    def is_valid(self) -> bool:
-        if not super().is_valid():
-            return False
-        if not re.match(r'^[\w]+@[\w]+\.[\w+]{1,3}$', self.get()):
-            return False
-        return True
+    def check(self) -> None:
+        super().check()
+        value = self.get()
+        if not re.match(r'^[\w]+@[\w]+\.[\w+]{1,3}$', value):
+            raise ValueError(value)
 
 
 class IntegerField(Field):
-    def is_valid(self) -> bool:
+    def check(self) -> None:
         value = self.get()
-        return isinstance(value, int) and type(value) is not bool
+        if not isinstance(value, int) or type(value) is bool:
+            raise ValueError(value)
