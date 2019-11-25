@@ -223,3 +223,27 @@ class TestDocument:
         assert book.name == response['name']
         assert book.nested['a'] == response['nested']['a']
         assert book.nested['b'] == response['nested']['b']
+
+    @no_database
+    def test_copy(self):
+        doc = Document(collection='test', _id='abcdef')
+        doc.name = Field(value='named test', default=lambda: 'tested')
+        cpy = doc.copy()
+        assert doc != cpy
+        assert doc.name == cpy.name
+        cpy.name = None
+        assert cpy.name == 'tested'
+        assert doc.name == 'named test'
+        assert cpy._id is None
+        assert cpy.collection == doc.collection
+
+    @no_database
+    def test_load_dict(self):
+        original = Document(collection='test')
+        original.name = Field(value='named test')
+        original.age = Field(value=12)
+        cpy = original.copy().load_dict({'name': 'bibou', 'age': 30})
+        assert cpy.name == 'bibou'
+        assert original.name == 'named test'
+        assert original.age == 12
+        assert cpy.age == 30

@@ -13,6 +13,19 @@ class TestField:
         field.set_value(value)
         assert field.value == value
 
+    @pytest.mark.parametrize('value, required, default', (
+        (0, True, None),
+        (42, False, lambda: -1),
+        (None, False, None)
+    ))
+    def test_copy(self, value, required, default):
+        field = Field(value=value, required=required, default=default)
+        cpy = field.copy()
+        assert field != cpy
+        assert field.value == cpy.value
+        assert field.get() == cpy.get()
+        assert field.required == cpy.required
+
 
 class TestStringField:
     @pytest.mark.parametrize('text', ('This is valid !', '0123456789', ''))

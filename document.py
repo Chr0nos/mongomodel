@@ -134,3 +134,22 @@ class Document:
             match = {}
         func = getattr(db[self.collection], 'find' if not one else 'find_one')
         return func(match, **kwargs)
+
+    def copy(self):
+        """Returns a new instance of the current class, also make a copy of
+        each fields in the document
+        """
+        fields = {name: object.__getattribute__(self, name).copy()
+                  for name in self.fields}
+        doc = type(self)(collection=self.collection, **fields)
+        return doc
+
+    def clear(self):
+        for field in self.fields:
+            setattr(self, field, None)
+
+    def load_dict(self, response: dict):
+        self.clear()
+        for k, v in response.items():
+            setattr(self, k, v)
+        return self

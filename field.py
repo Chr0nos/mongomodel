@@ -33,11 +33,21 @@ class Field:
             return self.default()
         return self.value
 
+    def copy(self):
+        field = type(self)(value=self.value, required=self.required,
+                           default=self.default)
+        return field
+
 
 class StringField(Field):
     def __init__(self, maxlen=None, **kwargs):
         super().__init__(**kwargs)
         self.maxlen = maxlen
+
+    def copy(self):
+        instance = super().copy()
+        instance.maxlen = self.maxlen
+        return instance
 
     def check(self):
         value = self.get()
