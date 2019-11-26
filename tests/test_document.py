@@ -236,6 +236,7 @@ class TestDocument:
         assert doc.name == 'named test'
         assert cpy._id is None
         assert cpy.collection == doc.collection
+        assert doc.raw_attr('name') != cpy.raw_attr('name')
 
     @no_database
     def test_load_dict(self):
