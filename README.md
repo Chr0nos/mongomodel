@@ -86,6 +86,7 @@ returns a list of `str`
 cpy = user.copy()
 cpy.kind = StringField(value='artist', maxlen='20')
 ```
+the copied document wil have it's own `Fields`
 
 
 ## Load a document from it's ID

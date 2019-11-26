@@ -147,9 +147,17 @@ class Document:
     def clear(self):
         for field in self.fields:
             setattr(self, field, None)
+        return self
 
     def load_dict(self, response: dict):
         self.clear()
-        for k, v in response.items():
+        return self.update(**response)
+
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
             setattr(self, k, v)
         return self
+
+    def __iter__(self):
+        for field_name in self.fields:
+            yield field_name, getattr(self, field_name)
