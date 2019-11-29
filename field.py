@@ -61,7 +61,7 @@ class EmailField(StringField):
     def check(self) -> None:
         super().check()
         value = self.get()
-        if not re.match(r'^[\w]+@[\w]+\.[\w+]{1,3}$', value):
+        if not re.match(r'^[\w\.]+@[\w.]+\.[a-z]{2,3}$', value):
             raise ValueError(value)
 
 

@@ -58,7 +58,8 @@ class TestEmailField:
     @pytest.mark.parametrize('email', (
                                         'test@free.fr',
                                         'thing@gmail.be',
-                                        # 'author@student.42.fr',
+                                        'author@student.42.fr',
+                                        'mark@sub.domain.inside.org',
                                         'a@b.cd'
     ))
     def test_valid(self, email):

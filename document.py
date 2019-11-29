@@ -100,8 +100,7 @@ class Document:
         if not self._id:
             raise ValueError('id')
         response: dict = self.cursor.find_one({'_id': self._id})
-        for k in self.fields:
-            setattr(self, k, response.get(k))
+        self.update(**response)
         return self
 
     def to_dict(self) -> dict:
