@@ -153,10 +153,6 @@ class Document:
             setattr(self, field, None)
         return self
 
-    def load_dict(self, response: dict):
-        self.clear()
-        return self.update(**response)
-
     def update(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)

@@ -220,11 +220,13 @@ class TestDocument:
         assert doc.raw_attr('name') != cpy.raw_attr('name')
 
     @no_database
-    def test_load_dict(self):
+    def test_update(self):
         original = Document(collection='test')
         original.name = Field(value='named test')
         original.age = Field(value=12)
-        cpy = original.copy().load_dict({'name': 'bibou', 'age': 30})
+        cpy = original.copy()
+        cpy.clear()
+        cpy.update(name='bibou', age=30)
         assert cpy.name == 'bibou'
         assert original.name == 'named test'
         assert original.age == 12

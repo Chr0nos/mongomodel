@@ -156,4 +156,5 @@ class CustomField(Field):
 
 
 ## Extra fields from database
-All fields that are not defined into the model/document will be ignored
+All fields that are not defined into the model/document will be available in
+readonly.
