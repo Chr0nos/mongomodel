@@ -80,7 +80,8 @@ class Document:
             response = self.cursor.insert_one(self.to_dict())
             self._id = response.inserted_id
             return response
-        return self.cursor.update_one({'_id': self._id}, self.to_dict())
+        return self.cursor.update_one({'_id': self._id},
+                                      {'$set': self.to_dict()})
 
     def delete(self):
         """Remove the current document from the database if already present
@@ -166,7 +167,7 @@ class Document:
             yield field_name, getattr(self, field_name)
 
     @classmethod
-    def find(cls, sort=None, limit=None, **kwargs):
+    def find(cls, sort=None, limit=None, **kwargs) -> List['Document']:
         collection: pymongo.collection.Collection = db[cls.collection]
         cursor = collection.find(kwargs)
         if sort:

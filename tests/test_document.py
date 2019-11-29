@@ -83,7 +83,7 @@ class TestDocument:
         update: MagicMock = mock_db.__getitem__.return_value.update_one
         doc = Document(_id='test')
         doc.save()
-        update.assert_called_once()
+        update.assert_called_once_with({'_id': 'test'}, {'$set': {}})
         assert doc._id == 'test'
 
     @no_database
@@ -244,3 +244,12 @@ class TestDocument:
         assert seb.name == 'seb'
         assert tom.name == 'tom'
         assert seb._id != tom._id
+
+    @no_database
+    def test_iter(self):
+        class Test(Document):
+            collection = 'test'
+            a = Field(value='a1')
+            b = Field(value='b1')
+
+        assert list(Test()) == [('a', 'a1'), ('b', 'b1')]
