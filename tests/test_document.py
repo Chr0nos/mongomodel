@@ -123,25 +123,6 @@ class TestDocument:
         find_one.assert_called_once_with({'_id': 42})
         assert doc.test is True
 
-    @patch('document.db')
-    def test_find(self, mock_db):
-        find = mock_db.__getitem__.return_value.find
-        find.return_value = [{'_id': docid} for docid in range(10)]
-        response = list(Document(collection='test').find())
-        assert len(response) == 10
-        for index, doc_dict in enumerate(response):
-            assert doc_dict['_id'] == index
-        find.assert_called()
-
-    @patch('document.db')
-    def test_find_one(self, mock_db):
-        test_doc = {'_id': 54266}
-        find_one = mock_db.__getitem__.return_value.find_one
-        find_one.return_value = test_doc
-        response = Document(collection='test').find(match=test_doc, one=True)
-        find_one.assert_called_once_with(test_doc)
-        assert response == test_doc
-
     @no_database
     def test_fields_append(self):
         doc = Document(collection='test')
@@ -248,3 +229,18 @@ class TestDocument:
         assert original.name == 'named test'
         assert original.age == 12
         assert cpy.age == 30
+
+    @patch('document.db')
+    def test_find(self, mock_db):
+        class User(Document):
+            collection = 'user'
+            name = Field()
+
+        mock_db.__getitem__.return_value.find.return_value = (
+            {'name': 'seb', '_id': ObjectId()},
+            {'name': 'tom', '_id': ObjectId()}
+        )
+        seb, tom = User.find()
+        assert seb.name == 'seb'
+        assert tom.name == 'tom'
+        assert seb._id != tom._id

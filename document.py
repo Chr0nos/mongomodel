@@ -26,9 +26,18 @@ class Document:
         self.fields_discover()
         if collection:
             self.collection = collection
+        self._copy_fields()
         for key, value in kwargs.items():
             setattr(self, key, value)
         self.cursor = db[self.collection]
+
+    def _copy_fields(self) -> None:
+        """Fields needs to be differents object from the main class declaration
+        to prevent instance_a to taint on instance_b
+        """
+        for field_name in self.fields:
+            field = object.__getattribute__(self, field_name)
+            object.__setattr__(self, field_name, field.copy())
 
     def fields_discover(self):
         # discover class fields
@@ -129,12 +138,6 @@ class Document:
         document = cls(**resource, collection=collection)
         return document
 
-    def find(self, match=None, one=False, **kwargs):
-        if match is None:
-            match = {}
-        func = getattr(db[self.collection], 'find' if not one else 'find_one')
-        return func(match, **kwargs)
-
     def copy(self):
         """Returns a new instance of the current class, also make a copy of
         each fields in the document
@@ -161,3 +164,13 @@ class Document:
     def __iter__(self):
         for field_name in self.fields:
             yield field_name, getattr(self, field_name)
+
+    @classmethod
+    def find(cls, sort=None, limit=None, **kwargs):
+        collection: pymongo.collection.Collection = db[cls.collection]
+        cursor = collection.find(kwargs)
+        if sort:
+            cursor = cursor.sort(sort)
+        if limit:
+            cursor = cursor.limit(limit)
+        return [cls(**item) for item in cursor]
