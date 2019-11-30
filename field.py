@@ -47,6 +47,7 @@ class StringField(Field):
     def copy(self):
         instance = super().copy()
         instance.maxlen = self.maxlen
+        instance.value = f'{self.value}' if self.value is not None else None
         return instance
 
     def check(self):
@@ -70,3 +71,22 @@ class IntegerField(Field):
         value = self.get()
         if not isinstance(value, int) or type(value) is bool:
             raise ValueError(value)
+
+
+class RegexField(StringField):
+    def __init__(self, regex: str, **kwargs):
+        super().__init__(**kwargs)
+        self.regex = re.compile(regex)
+        self.rule = regex
+
+    def check(self) -> None:
+        super().check()
+        value = self.get()
+        if not self.regex.match(value):
+            raise ValueError(value)
+
+    def copy(self):
+        instance = super().copy()
+        instance.rule = f'{self.rule}'
+        instance.regex = re.compile(self.rule)
+        return instance

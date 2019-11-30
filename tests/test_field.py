@@ -1,5 +1,5 @@
 import pytest
-from field import Field, StringField, EmailField, IntegerField
+from field import Field, StringField, EmailField, IntegerField, RegexField
 
 
 class TestField:
@@ -72,7 +72,11 @@ class TestEmailField:
         'foo',
         None,
         False, True,
-        1.0
+        1.0,
+        'blah@nope',
+        '..',
+        'a@b@.fr',
+        ''
     ))
     def test_invalid(self, email):
         field = EmailField(maxlen=30)
@@ -95,3 +99,27 @@ class TestIntegerField:
         field = IntegerField()
         field.set_value(value)
         assert field.is_valid() is valid
+
+
+class TestRegexField:
+    def test_inheritance(self):
+        field = RegexField(r'')
+        assert isinstance(field, StringField)
+
+    @pytest.mark.parametrize('rule, value', [
+        (r'^\w+$', 'test'),
+        (r'^\d+$', '0123456789'),
+        (r'^[abc]+$', 'abcaaac')
+    ])
+    def test_check(self, rule, value):
+        field = RegexField(rule, value=value)
+        field.check()
+
+    @pytest.mark.parametrize('rule, value', [
+        (r'^\d+$', 'test'),
+        (r'^\w$', 'te st'),
+    ])
+    def test_invalid(self, rule, value):
+        field = RegexField(rule, value=value)
+        with pytest.raises(ValueError):
+            field.check()
