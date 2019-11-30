@@ -247,6 +247,17 @@ class TestDocument:
         assert tom.name == 'tom'
         assert seb._id != tom._id
 
+    @patch('document.db')
+    def test_find_raw(self, mock_db):
+        find: MagicMock = mock_db.__getitem__.return_value.find
+        find.return_value = None
+
+        class Test(Document):
+            collection = 'test'
+
+        Test.find_raw()
+        find.assert_called_once()
+
     @no_database
     def test_iter(self):
         class Test(Document):

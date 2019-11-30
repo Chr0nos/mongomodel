@@ -138,7 +138,7 @@ class Document:
         document = cls(**resource, collection=collection)
         return document
 
-    def copy(self):
+    def copy(self) -> 'Document':
         """Returns a new instance of the current class, also make a copy of
         each fields in the document
         """
@@ -170,3 +170,11 @@ class Document:
         if limit:
             cursor = cursor.limit(limit)
         return [cls(**item) for item in cursor]
+
+    @classmethod
+    def find_raw(cls, search: dict = None) -> pymongo.cursor.Cursor:
+        """Peforms a search in the database in raw mode: no Document will be
+        created, all fields will be visible, use this for debugging purposes.
+        """
+        collection: pymongo.collection.Collection = db[cls.collection]
+        return collection.find(search if search else {})
