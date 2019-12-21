@@ -1,5 +1,6 @@
 import pytest
-from field import Field, StringField, EmailField, IntegerField, RegexField
+from mongorm.field import Field, StringField, EmailField, IntegerField, \
+                          RegexField
 
 
 class TestField:

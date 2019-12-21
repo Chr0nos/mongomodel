@@ -2,10 +2,7 @@ from typing import List
 from bson import ObjectId
 import pymongo
 # from . import db
-from field import Field
-
-client = pymongo.MongoClient(host='10.8.0.1', connect=False)
-db: pymongo.database.Database = client.test
+from . import db, Field
 
 
 class DocumentNotFoundError(Exception):
@@ -130,7 +127,7 @@ class Document:
         return invalids
 
     @classmethod
-    def from_id(cls, document_id: ObjectId, collection=None):
+    def from_id(cls, document_id: ObjectId, collection=None) -> 'Document':
         collection = collection if collection else cls.collection
         resource = db[collection].find_one({'_id': document_id})
         if not resource:
@@ -147,12 +144,12 @@ class Document:
         doc = type(self)(collection=self.collection, **fields)
         return doc
 
-    def clear(self):
+    def clear(self) -> 'Document':
         for field in self.fields:
             setattr(self, field, None)
         return self
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> 'Document':
         for k, v in kwargs.items():
             setattr(self, k, v)
         return self

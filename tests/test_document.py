@@ -2,8 +2,8 @@ import pytest
 from mock import patch, MagicMock
 
 from bson import ObjectId
-from document import (
-    Document, Field, DocumentInvalidError, DocumentNotFoundError)
+from mongorm import (Document, Field, DocumentInvalidError,
+                     DocumentNotFoundError)
 from datetime import datetime
 
 from functools import wraps
@@ -14,7 +14,7 @@ def no_database(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with patch('document.db.__getitem__') as collection:
+        with patch('mongorm.document.db.__getitem__') as collection:
             collection.return_value = None
             func(*args, **kwargs)
     return wrapper
@@ -57,20 +57,20 @@ class TestDocument:
             missing.remove(field)
         assert not missing, missing
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_from_id(self, mock_db):
         test_dict = {'test': True}
         mock_db.__getitem__.return_value.find_one.return_value = test_dict
         doc = Document.from_id('test')
         assert isinstance(doc, Document)
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_from_unknow_id(self, mock_db):
         mock_db.__getitem__.return_value.find_one.return_value = None
         with pytest.raises(DocumentNotFoundError):
             Document.from_id('test')
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_save_new(self, mock_db):
         insert: MagicMock = mock_db.__getitem__.return_value.insert_one
         insert.return_value.inserted_id.return_value = 42
@@ -78,7 +78,7 @@ class TestDocument:
         doc.save()
         insert.assert_called_once_with({})
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_save_old(self, mock_db):
         update: MagicMock = mock_db.__getitem__.return_value.update_one
         doc = Document(_id='test')
@@ -98,7 +98,7 @@ class TestDocument:
         doc = Document(collection='test')
         assert doc.delete() is None
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_delete_legit(self, mock_db):
         delete_one = mock_db.__getitem__.return_value.delete_one
         delete_one.return_value = True
@@ -113,7 +113,7 @@ class TestDocument:
         with pytest.raises(ValueError):
             doc.refresh()
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_refresh_legit(self, mock_db):
         find_one = mock_db.__getitem__.return_value.find_one
         find_one.return_value = {'test': True}
@@ -183,7 +183,7 @@ class TestDocument:
         doc.foo = InvalidField()
         assert doc.is_valid() is False
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_agnostic_retrive(self, db):
         response = {
             '_id': ObjectId(),
@@ -232,7 +232,7 @@ class TestDocument:
         assert original.age == 12
         assert cpy.age == 30
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_find(self, mock_db):
         class User(Document):
             collection = 'user'
@@ -247,7 +247,7 @@ class TestDocument:
         assert tom.name == 'tom'
         assert seb._id != tom._id
 
-    @patch('document.db')
+    @patch('mongorm.document.db')
     def test_find_raw(self, mock_db):
         find: MagicMock = mock_db.__getitem__.return_value.find
         find.return_value = None
