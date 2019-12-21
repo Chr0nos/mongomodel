@@ -190,3 +190,10 @@ class Document:
         for doc, objectid in zip(insert_list, result.inserted_ids):
             doc._id = objectid
         return insert_list
+
+    @classmethod
+    def drop(cls, session=None) -> None:
+        """Drop the whole collection related to this class
+        """
+        collection: pymongo.collection.Collection = db[cls.collection]
+        collection.drop(session)

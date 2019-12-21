@@ -266,3 +266,48 @@ class TestDocument:
             b = Field(value='b1')
 
         assert list(Test()) == [('a', 'a1'), ('b', 'b1')]
+
+    @patch('mongorm.document.db')
+    def test_drop(self, mock_db):
+        mock_drop = mock_db.__getitem__.return_value.drop
+
+        class Test(Document):
+            collection = 'dropme'
+
+        Test.drop()
+        mock_drop.assert_called_once()
+
+    @pytest.mark.parametrize(
+        'items_count, valids_count', (
+            (10, 10),
+            (10, 5),
+            (10, 0),
+        )
+    )
+    @patch('mongorm.document.db')
+    def test_insert_many(self, mock_db, items_count, valids_count):
+        insert_many = mock_db.__getitem__.return_value.insert_many
+
+        class Test(Document):
+            collection = 'test'
+            value = Field()
+
+            def is_valid(self):
+                return False
+
+        class FakeInsertManyResponse:
+            def __init__(self, items):
+                self.inserted_ids = items
+
+        items = list([Test(value='test') for _ in range(items_count)])
+        for i in range(valids_count):
+            items[i].is_valid = lambda: True
+
+        insert_many.return_value = FakeInsertManyResponse(
+            list([ObjectId() for _ in range(valids_count)]))
+        inserted = Test.insert_many(items)
+
+        insert_many.assert_called_once()
+        assert len(inserted) == valids_count
+        for doc in inserted:
+            assert doc._id is not None
