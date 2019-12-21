@@ -1,7 +1,7 @@
 # noqa: F401
 import pymongo
 
-client = pymongo.MongoClient(host='10.8.0.2', connect=False)
+client = pymongo.MongoClient(host='10.8.0.1', connect=False)
 db: pymongo.database.Database = client.test
 
 

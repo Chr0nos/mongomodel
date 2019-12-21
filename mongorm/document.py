@@ -175,3 +175,18 @@ class Document:
         """
         collection: pymongo.collection.Collection = db[cls.collection]
         return collection.find(search if search else {})
+
+    @classmethod
+    def insert_many(cls, documents: List['Document']) -> List['Document']:
+        """Insert all valids documents given, will not not raise error on
+        invalid ones but will not insert them, instead this function return the
+        list of inserted items, it will also populate then with an ._id
+        """
+        insert_list = [doc for doc in documents if doc.is_valid()]
+
+        result = db[cls.collection].insert_many(
+            [doc.to_dict() for doc in insert_list])
+
+        for doc, objectid in zip(insert_list, result.inserted_ids):
+            doc._id = objectid
+        return insert_list
