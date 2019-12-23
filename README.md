@@ -124,8 +124,7 @@ main class `Field` wich is allways considered as valid.
 it's possible to have default values if the field stay at a `None` state
 
 ```python
-from mongorm.document import Document
-from mongorm.field import Field
+import mongorm
 from datetime import datetime
 
 
