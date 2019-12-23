@@ -185,7 +185,10 @@ class Document:
 
     @classmethod
     def get_collection(cls) -> pymongo.collection.Collection:
-        return db[cls.collection]
+        collection: str = getattr(cls, 'collection')
+        if not collection:
+            collection = cls.__name__.lower()
+        return db[collection]
 
     @classmethod
     def insert_many(cls, documents: List['Document'],
