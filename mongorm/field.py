@@ -73,6 +73,30 @@ class IntegerField(Field):
             raise ValueError(value)
 
 
+class TypeField(Field):
+    """Just enforce an object type, it can be scallar or not, just be carefull
+    that mongodb can store it.
+
+    example: TypeField(required_type=datetime, default=lambda: datetime.now())
+    """
+    def __init__(self, *args, required_type: type, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.type = required_type
+
+    def check(self) -> None:
+        value = self.get()
+        if self.type is None:
+            if value is not None:
+                raise ValueError(value)
+        elif not isinstance(value, self.type):
+            raise ValueError(value)
+
+
+class FloatField(TypeField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, required_type=float, **kwargs)
+
+
 class RegexField(StringField):
     def __init__(self, regex: str, **kwargs):
         super().__init__(**kwargs)

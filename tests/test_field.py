@@ -1,6 +1,6 @@
 import pytest
 from mongorm.field import Field, StringField, EmailField, IntegerField, \
-                          RegexField
+                          RegexField, TypeField
 
 
 class TestField:
@@ -122,5 +122,40 @@ class TestRegexField:
     ])
     def test_invalid(self, rule, value):
         field = RegexField(rule, value=value)
+        with pytest.raises(ValueError):
+            field.check()
+
+
+class TestTypeField:
+    @pytest.mark.parametrize('input, required_type', [
+        ('hi', str),
+        (1, int),
+        (0, int),
+        (True, bool),
+        (False, bool),
+        (1.0, float),
+        (0.0, float),
+        ({}, dict),
+        ([], list),
+        ((1,2), tuple),
+        (TestEmailField(), TestEmailField),
+        (b'bits', bytes),
+        (None, None)
+    ])
+    def test_valids(self, input, required_type):
+        field = TypeField(value=input, required_type=required_type)
+        field.check()
+
+    @pytest.mark.parametrize('input, required_type', [
+        ('hi', bool),
+        (1.0, int),
+        ('', None),
+        (0, None),
+        ([], None),
+        (1, bool),
+        (0, bool)
+    ])
+    def test_invalids(self, input, required_type):
+        field = TypeField(value=input, required_type=required_type)
         with pytest.raises(ValueError):
             field.check()
