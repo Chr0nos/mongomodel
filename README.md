@@ -11,18 +11,26 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+then the in the code
+```python
+import mongorm
+
+mongorm.setup_database(hostname='something', database='test')
+# now you can use the orm.
+```
+
 ## Example
 ### Create
 To create a new document model you have to make a new class from `Document`
 ```python
-from mongorm.document import Document
-from mongorm.field import StringField, EmailField, IntegerField, Field
+import mongorm
 
-class User(Document):
+
+class User(monhorm.Document):
 	collection = 'user'
-	name = StringField(maxlen=255)
-	email = EmailField(maxlen=255)
-	level = IntegerField()
+	name = mongorm.StringField(maxlen=255)
+	email = mongorm.EmailField(maxlen=255)
+	level = mongorm.IntegerField()
 ```
 
 then you can instanciate a new user in two ways:
@@ -121,10 +129,10 @@ from mongorm.field import Field
 from datetime import datetime
 
 
-class Book(Document):
+class Book(mongorm.Document):
 	collection = 'book'
-	name = Field(default=lambda: '')
-	creation_date = Field(default=lambda: datetime.now().isoformat())
+	name = mongorm.Field(default=lambda: '')
+	creation_date = mongorm.Field(default=lambda: datetime.now().isoformat())
 
 ```
 I use function to prevent a useless call in case of no value provided.
@@ -136,7 +144,7 @@ This is an example of a `last updated` field
 ```python
 from datetime import datetime
 
-class LastUpdateField(Field):
+class LastUpdateField(mongorm.Field):
 	def get(self):
 		return datetime.now().isoformat()
 ```
@@ -146,7 +154,7 @@ document.
 
 ## Custom field validation
 ```python
-class CustomField(Field):
+class CustomField(mongorm.Field):
 	def check(self):
 		# you can perform validations here.
 		# self.value = the current value
@@ -158,3 +166,17 @@ class CustomField(Field):
 ## Extra fields from database
 All fields that are not defined into the model/document will be available in
 readonly.
+
+
+## Create many documents at once
+```python
+books: List[Book] = [
+	Book(name='mongodb'),
+	Book(name='something'),
+	...
+]
+Book.insert_many(books)
+```
+At this point all inserted (valids) book will have an `_id` property,
+In case of invalid documents, no errors will be raised but the document will be
+ignored.
