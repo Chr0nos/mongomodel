@@ -1,6 +1,8 @@
 from typing import List
 from bson import ObjectId
 import pymongo
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, \
+                                AsyncIOMotorCursor, AsyncIOMotorDatabase
 # from . import db
 from . import db, Field
 
@@ -66,46 +68,49 @@ class Document:
             self.fields.remove(name)
         super().__delattr__(name)
 
-    def save(self, session=None):
+    async def save(self, session=None):
         """Update or insert the current document to the database if needed
         then return the response from the database
         """
         if not self.is_valid():
             raise DocumentInvalidError
-        collection = self.get_collection()
+        collection: AsyncIOMotorCollection = self.get_collection()
         if not self._id:
-            response = collection.insert_one(self.to_dict(), session=session)
+            response = await collection.insert_one(
+                self.to_dict(), session=session)
             self._id = response.inserted_id
             return response
-        return collection.update_one({'_id': self._id},
-                                     {'$set': self.to_dict()},
-                                     session=session)
+        return await collection.update_one({'_id': self._id},
+                                           {'$set': self.to_dict()},
+                                           session=session)
 
-    def commit(self, **kwargs):
+    async def commit(self, **kwargs):
         """Perform a `.save()` but return self insead of the database response
         """
-        self.save(**kwargs)
+        await self.save(**kwargs)
         return self
 
-    def delete(self, session=None):
+    async def delete(self, session=None):
         """Remove the current document from the database if already present
         the _id is used to know if the document is in db.
         """
         if self._id is None:
             return
-        response = self.get_collection().delete_one(
+        response = await self.get_collection().delete_one(
             {'_id': self._id}, session=session)
         self._id = None
         return response
 
-    def refresh(self, session=None):
+    async def refresh(self, session=None):
         """Reload the current id from the database, if no id is available a
         ValueError will be raised.
         """
         if not self._id:
             raise ValueError('id')
-        response: dict = self.get_collection().find_one({'_id': self._id},
-                                                        session=session)
+        response: dict = await self.get_collection().find_one(
+            {'_id': self._id},
+            session=session
+        )
         self.update(**response)
         return self
 
@@ -136,9 +141,9 @@ class Document:
         return invalids
 
     @classmethod
-    def from_id(cls, document_id: ObjectId, collection=None) -> 'Document':
+    async def from_id(cls, document_id: ObjectId, collection=None) -> 'Document':
         collection = collection if collection else cls.collection
-        resource = db[collection].find_one({'_id': document_id})
+        resource = await db[collection].find_one({'_id': document_id})
         if not resource:
             raise DocumentNotFoundError
         document = cls(**resource, collection=collection)
@@ -168,24 +173,24 @@ class Document:
             yield field_name, getattr(self, field_name)
 
     @classmethod
-    def find(cls, filter: dict = None, sort=None, limit=None,
+    async def find(cls, filter: dict = None, sort=None, limit=None,
             **kwargs) -> List['Document']:
         cursor = cls.get_collection().find(kwargs)
         if sort:
             cursor = cursor.sort(sort)
         if limit:
             cursor = cursor.limit(limit)
-        return [cls(**item) for item in cursor]
+        return [cls(**item) async for item in cursor]
 
     @classmethod
-    def find_raw(cls, search: dict = None) -> pymongo.cursor.Cursor:
+    async def find_raw(cls, search: dict = None) -> pymongo.cursor.Cursor:
         """Peforms a search in the database in raw mode: no Document will be
         created, all fields will be visible, use this for debugging purposes.
         """
-        return cls.get_collection().find(search if search else {})
+        return await cls.get_collection().find(search if search else {})
 
     @classmethod
-    def get_collection(cls) -> pymongo.collection.Collection:
+    def get_collection(cls) -> AsyncIOMotorCollection:
         collection: str = getattr(cls, 'collection')
         if not collection:
             collection = cls.__name__.lower()
@@ -210,10 +215,10 @@ class Document:
         return insert_list
 
     @classmethod
-    def drop(cls, session=None) -> None:
+    async def drop(cls, session=None) -> None:
         """Drop the whole collection related to this class
         """
-        cls.get_collection().drop(session=session)
+        await cls.get_collection().drop(session=session)
 
     @classmethod
     def delete_many(cls, documents: List['Document'],

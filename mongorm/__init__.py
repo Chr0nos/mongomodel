@@ -1,8 +1,9 @@
 # noqa: F401
-import pymongo
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, \
+                                AsyncIOMotorCursor, AsyncIOMotorDatabase
 
-client = pymongo.MongoClient(host='10.8.0.1', connect=False)
-db: pymongo.database.Database = client.test
+client = AsyncIOMotorClient(host='10.8.0.1', connect=False)
+db: AsyncIOMotorDatabase = client.test
 
 
 from .field import Field, StringField, EmailField, RegexField, IntegerField, \
