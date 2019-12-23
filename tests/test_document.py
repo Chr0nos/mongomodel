@@ -312,3 +312,18 @@ class TestDocument:
         assert len(inserted) == valids_count
         for doc in inserted:
             assert doc._id is not None
+
+    @patch('mongorm.document.db')
+    def test_delete_many(self, mock_db):
+        delete_many = mock_db.__getitem__.return_value.delete_many
+        delete_many.return_value = None
+
+        documents_list = list(
+            [Document('test', _id=object()) for _ in range(10)])
+
+        ids = list([doc._id for doc in documents_list])
+        Document.delete_many(documents_list)
+        delete_many.assert_called_once_with({'_id': {'$in': ids}},
+                                            session=None)
+        for doc in documents_list:
+            assert doc._id is None

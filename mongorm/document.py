@@ -81,6 +81,12 @@ class Document:
                                      {'$set': self.to_dict()},
                                      session=session)
 
+    def commit(self, **kwargs):
+        """Perform a `.save()` but return self insead of the database response
+        """
+        self.save(**kwargs)
+        return self
+
     def delete(self, session=None):
         """Remove the current document from the database if already present
         the _id is used to know if the document is in db.
@@ -204,3 +210,15 @@ class Document:
         """Drop the whole collection related to this class
         """
         cls.get_collection().drop(session=session)
+
+    @classmethod
+    def delete_many(cls, documents: List['Document'],
+                    session=None) -> List['Document']:
+        doclist = dict({doc._id: doc for doc in documents})
+        cls.get_collection().delete_many(
+            {'_id': {'$in': list(doclist.keys())}},
+            session=session
+        )
+        for doc in doclist.values():
+            doc._id = None
+        return documents
