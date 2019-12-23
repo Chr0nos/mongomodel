@@ -76,14 +76,15 @@ class TestDocument:
         insert.return_value.inserted_id.return_value = 42
         doc = Document()
         doc.save()
-        insert.assert_called_once_with({})
+        insert.assert_called_once_with({}, session=None)
 
     @patch('mongorm.document.db')
     def test_save_old(self, mock_db):
         update: MagicMock = mock_db.__getitem__.return_value.update_one
         doc = Document(_id='test')
         doc.save()
-        update.assert_called_once_with({'_id': 'test'}, {'$set': {}})
+        update.assert_called_once_with({'_id': 'test'}, {'$set': {}},
+                                       session=None)
         assert doc._id == 'test'
 
     @no_database
@@ -105,7 +106,7 @@ class TestDocument:
         doc = Document(_id='foo')
         doc.delete()
         assert doc._id is None
-        delete_one.assert_called_once_with({'_id': 'foo'})
+        delete_one.assert_called_once_with({'_id': 'foo'}, session=None)
 
     @no_database
     def test_refresh_without_id(self):
@@ -120,7 +121,7 @@ class TestDocument:
         doc = Document(_id=42)
         doc.test = Field()
         doc.refresh()
-        find_one.assert_called_once_with({'_id': 42})
+        find_one.assert_called_once_with({'_id': 42}, session=None)
         assert doc.test is True
 
     @no_database

@@ -26,7 +26,6 @@ class Document:
         self._copy_fields()
         for key, value in kwargs.items():
             setattr(self, key, value)
-        self.cursor = db[self.collection]
 
     def _copy_fields(self) -> None:
         """Fields needs to be differents object from the main class declaration
@@ -67,36 +66,40 @@ class Document:
             self.fields.remove(name)
         super().__delattr__(name)
 
-    def save(self):
+    def save(self, session=None):
         """Update or insert the current document to the database if needed
         then return the response from the database
         """
         if not self.is_valid():
             raise DocumentInvalidError
+        collection = self.get_collection()
         if not self._id:
-            response = self.cursor.insert_one(self.to_dict())
+            response = collection.insert_one(self.to_dict(), session=session)
             self._id = response.inserted_id
             return response
-        return self.cursor.update_one({'_id': self._id},
-                                      {'$set': self.to_dict()})
+        return collection.update_one({'_id': self._id},
+                                     {'$set': self.to_dict()},
+                                     session=session)
 
-    def delete(self):
+    def delete(self, session=None):
         """Remove the current document from the database if already present
         the _id is used to know if the document is in db.
         """
         if self._id is None:
             return
-        response = self.cursor.delete_one({'_id': self._id})
+        response = self.get_collection().delete_one(
+            {'_id': self._id}, session=session)
         self._id = None
         return response
 
-    def refresh(self):
+    def refresh(self, session=None):
         """Reload the current id from the database, if no id is available a
         ValueError will be raised.
         """
         if not self._id:
             raise ValueError('id')
-        response: dict = self.cursor.find_one({'_id': self._id})
+        response: dict = self.get_collection().find_one({'_id': self._id},
+                                                        session=session)
         self.update(**response)
         return self
 
@@ -160,8 +163,7 @@ class Document:
 
     @classmethod
     def find(cls, sort=None, limit=None, **kwargs) -> List['Document']:
-        collection: pymongo.collection.Collection = db[cls.collection]
-        cursor = collection.find(kwargs)
+        cursor = cls.get_collection().find(kwargs)
         if sort:
             cursor = cursor.sort(sort)
         if limit:
@@ -173,19 +175,25 @@ class Document:
         """Peforms a search in the database in raw mode: no Document will be
         created, all fields will be visible, use this for debugging purposes.
         """
-        collection: pymongo.collection.Collection = db[cls.collection]
-        return collection.find(search if search else {})
+        return cls.get_collection().find(search if search else {})
 
     @classmethod
-    def insert_many(cls, documents: List['Document']) -> List['Document']:
+    def get_collection(cls) -> pymongo.collection.Collection:
+        return db[cls.collection]
+
+    @classmethod
+    def insert_many(cls, documents: List['Document'],
+                    session=None) -> List['Document']:
         """Insert all valids documents given, will not not raise error on
         invalid ones but will not insert them, instead this function return the
         list of inserted items, it will also populate then with an ._id
         """
         insert_list = [doc for doc in documents if doc.is_valid()]
 
-        result = db[cls.collection].insert_many(
-            [doc.to_dict() for doc in insert_list])
+        result = cls.get_collection().insert_many(
+            [doc.to_dict() for doc in insert_list],
+            session=session
+        )
 
         for doc, objectid in zip(insert_list, result.inserted_ids):
             doc._id = objectid
@@ -195,5 +203,4 @@ class Document:
     def drop(cls, session=None) -> None:
         """Drop the whole collection related to this class
         """
-        collection: pymongo.collection.Collection = db[cls.collection]
-        collection.drop(session)
+        cls.get_collection().drop(session=session)
