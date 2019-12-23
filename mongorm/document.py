@@ -168,7 +168,8 @@ class Document:
             yield field_name, getattr(self, field_name)
 
     @classmethod
-    def find(cls, sort=None, limit=None, **kwargs) -> List['Document']:
+    def find(cls, filter: dict = None, sort=None, limit=None,
+            **kwargs) -> List['Document']:
         cursor = cls.get_collection().find(kwargs)
         if sort:
             cursor = cursor.sort(sort)
