@@ -81,13 +81,13 @@ class Document:
                                      {'$set': self.to_dict()},
                                      session=session)
 
-    def commit(self, **kwargs):
+    def commit(self, **kwargs) -> 'Document':
         """Perform a `.save()` but return self insead of the database response
         """
         self.save(**kwargs)
         return self
 
-    def delete(self, session=None):
+    def delete(self, session=None) -> pymongo.collection.DeleteResult:
         """Remove the current document from the database if already present
         the _id is used to know if the document is in db.
         """
@@ -98,7 +98,7 @@ class Document:
         self._id = None
         return response
 
-    def refresh(self, session=None):
+    def refresh(self, session=None) -> 'Document':
         """Reload the current id from the database, if no id is available a
         ValueError will be raised.
         """
@@ -168,13 +168,15 @@ class Document:
             yield field_name, getattr(self, field_name)
 
     @classmethod
-    def find(cls, filter: dict = None, sort=None, limit=None,
+    def find(cls, filter: dict = None, sort=None, limit=None, offset=None,
             **kwargs) -> List['Document']:
         cursor = cls.get_collection().find(kwargs)
-        if sort:
-            cursor = cursor.sort(sort)
+        if offset:
+            cursor = cursor.skip(offset)
         if limit:
             cursor = cursor.limit(limit)
+        if sort:
+            cursor = cursor.sort(sort)
         return [cls(**item) for item in cursor]
 
     @classmethod
