@@ -1,11 +1,11 @@
-# MongOrm
+# MongoModel
 ## Description
 This project is a tiny ORM in python3 for mongodb.
 Each database entry is a `Document` and each document has `Fields`
 
 ## Getting started
 ```shell
-git clone git@github.com:Chr0nos/mongorm.git
+git clone git@github.com:Chr0nos/mongomodel.git
 virtualenv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -13,9 +13,9 @@ pip install -r requirements.txt
 
 then the in the code
 ```python
-import mongorm
+import mongomodel
 
-mongorm.setup_database(hostname='something', database='test')
+mongomodel.setup_database(hostname='something', database='test')
 # now you can use the orm.
 ```
 
@@ -23,14 +23,14 @@ mongorm.setup_database(hostname='something', database='test')
 ### Create
 To create a new document model you have to make a new class from `Document`
 ```python
-import mongorm
+import mongomodel
 
 
 class User(monhorm.Document):
 	collection = 'user'
-	name = mongorm.StringField(maxlen=255)
-	email = mongorm.EmailField(maxlen=255)
-	level = mongorm.IntegerField()
+	name = mongomodel.StringField(maxlen=255)
+	email = mongomodel.EmailField(maxlen=255)
+	level = mongomodel.IntegerField()
 ```
 
 then you can instanciate a new user in two ways:
@@ -124,14 +124,14 @@ main class `Field` wich is allways considered as valid.
 it's possible to have default values if the field stay at a `None` state
 
 ```python
-import mongorm
+import mongomodel
 from datetime import datetime
 
 
-class Book(mongorm.Document):
+class Book(mongomodel.Document):
 	collection = 'book'
-	name = mongorm.Field(default=lambda: '')
-	creation_date = mongorm.Field(default=lambda: datetime.now().isoformat())
+	name = mongomodel.Field(default=lambda: '')
+	creation_date = mongomodel.Field(default=lambda: datetime.now().isoformat())
 
 ```
 I use function to prevent a useless call in case of no value provided.
@@ -143,7 +143,7 @@ This is an example of a `last updated` field
 ```python
 from datetime import datetime
 
-class LastUpdateField(mongorm.Field):
+class LastUpdateField(mongomodel.Field):
 	def get(self):
 		return datetime.now().isoformat()
 ```
@@ -153,7 +153,7 @@ document.
 
 ## Custom field validation
 ```python
-class CustomField(mongorm.Field):
+class CustomField(mongomodel.Field):
 	def check(self):
 		# you can perform validations here.
 		# self.value = the current value
