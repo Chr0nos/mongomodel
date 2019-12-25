@@ -1,4 +1,9 @@
 *.pyc
-.venv/
+venv/
 __pycache__
 htmlcov
+dist
+mongomodel.egg-info/
+.coverage
+build
+.vscode
