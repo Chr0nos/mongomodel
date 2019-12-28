@@ -100,7 +100,10 @@ class QuerySet:
         return self.model.find_raw(self.query, **kwargs)
 
     def first(self, **kwargs):
-        return next(self.__iter__(**kwargs))
+        try:
+            return next(self.__iter__(**kwargs))
+        except StopIteration:
+            return None
 
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
