@@ -108,10 +108,10 @@ class QuerySet:
 
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
-        search = self.model.get_collection().find(instance.query, limit=2)
-        count = search.count()
+        search = list(self.model.find_raw(instance.query).limit(2))
+        count = len(search)
         if count > 1:
-            raise TooManyResults(f'too many items received: {count}')
+            raise TooManyResults('too many items received')
         if count == 0:
             raise DocumentNotFoundError(instance.query)
         model_instance = self.model(**search[0])
