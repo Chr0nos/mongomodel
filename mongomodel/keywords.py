@@ -44,7 +44,7 @@ class Gte(KeyWord):
     command = '$gte'
 
     @property
-    def invert(self):
+    def inverse(self):
         return '$lt'
 
 
@@ -52,5 +52,21 @@ class Lte(KeyWord):
     command = '$lte'
 
     @property
-    def invert(self):
+    def inverse(self):
         return '$gt'
+
+
+class Lt(KeyWord):
+    command = '$lt'
+
+    @property
+    def inverse(self):
+        return '$gte'
+
+
+class Gt(KeyWord):
+    command = '$gt'
+
+    @property
+    def inverse(self):
+        return '$lte'

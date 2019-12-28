@@ -1,5 +1,5 @@
 from typing import List, Any
-from .keywords import Eq, Neq, In, Nin, And, Nand, Or, Nor, Gte, Lte
+from .keywords import Eq, Neq, In, Nin, And, Nand, Or, Nor, Gte, Lte, Gt, Lt
 from .exceptions import DocumentNotFoundError
 
 
@@ -24,7 +24,9 @@ class QuerySet:
         'and': And(),
         'nand': Nand(),
         'gte': Gte(),
-        'lte': Lte()
+        'lte': Lte(),
+        'gt': Gt(),
+        'lt': Lt()
     }
 
     def __init__(self, model=None):
