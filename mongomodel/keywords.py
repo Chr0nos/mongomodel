@@ -8,6 +8,11 @@ class KeyWord:
         return '$n' + self.command[1:]
 
 
+class TopLevelKeyWord(KeyWord):
+    def __init__(self, *args):
+        self.expressions = args
+
+
 class Eq(KeyWord):
     command = '$eq'
 
@@ -16,11 +21,11 @@ class Neq(KeyWord):
     command = '$neq'
 
 
-class Or(KeyWord):
+class Or(TopLevelKeyWord):
     command = '$or'
 
 
-class Nor(KeyWord):
+class Nor(TopLevelKeyWord):
     command = '$nor'
 
 
@@ -32,11 +37,11 @@ class Nin(KeyWord):
     command = '$nin'
 
 
-class And(KeyWord):
+class And(TopLevelKeyWord):
     command = '$and'
 
 
-class Nand(KeyWord):
+class Nand(TopLevelKeyWord):
     command = '$nand'
 
 

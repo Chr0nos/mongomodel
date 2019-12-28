@@ -54,6 +54,11 @@ class QuerySet:
 
     @staticmethod
     def dict_path(path: List[str], value: Any = None) -> dict:
+        """Construct a dictionary from a path to hold the given value,
+        example:
+        d = QuerySet.dict_path(['a', 'b', 'c'], 42)
+        d == {'a': {'b': {'c': 42}}}
+        """
         out = {}
         node = out
         last_node = None
@@ -76,12 +81,15 @@ class QuerySet:
             except KeyError:
                 return arg
 
-        # return [apply_arg(arg) for arg in [path for path in args]]
+        def apply_path(path: List[str]):
+            # explicitly set final equality argument.
+            if invert and path[-1] not in cls.keywords:
+                path.append('eq')
+            return [apply_arg(arg) for arg in path]
 
         lst = []
         for path in args:
-            for arg in path:
-                lst.append(apply_arg(arg))
+            lst.extend(apply_path(path))
         return lst
 
     def __iter__(self, **kwargs):
@@ -114,3 +122,10 @@ class QuerySet:
         if count == 0:
             raise DocumentNotFoundError(instance.query)
         return instance.first()
+
+    def __add__(self, b: 'QuerySet') -> 'QuerySet':
+        instance = self.copy()
+        instance.query.update(b.query)
+        if not instance.model and b.model:
+            instance.model = b.model
+        return instance
