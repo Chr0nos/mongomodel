@@ -13,6 +13,7 @@ class TooManyResults(Exception):
 
 class QuerySet:
     query = {}
+    # must be a Model class, not an instance
     model = None
     keywords = {
         'eq': Eq,
@@ -107,12 +108,14 @@ class QuerySet:
 
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
-        count = instance.count()
+        search = self.model.get_collection().find(instance.query, limit=2)
+        count = search.count()
         if count > 1:
             raise TooManyResults(f'too many items received: {count}')
         if count == 0:
             raise DocumentNotFoundError(instance.query)
-        return instance.first()
+        model_instance = self.model(**search[0])
+        return model_instance
 
     def __add__(self, b: 'QuerySet') -> 'QuerySet':
         instance = self.copy()
