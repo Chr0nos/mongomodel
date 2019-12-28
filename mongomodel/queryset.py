@@ -117,3 +117,9 @@ class QuerySet:
         if not instance.model and b.model:
             instance.model = b.model
         return instance
+
+    def distinct(self, key: str, **kwargs) -> List[Any]:
+        if not self.model:
+            raise MissingModelError
+        return self.model.get_collection().distinct(
+            key=key, query=self.query, **kwargs)
