@@ -1,8 +1,13 @@
 from typing import List, Any
 from .keywords import Eq, Neq, In, Nin, And, Nand, Or, Nor, Gte, Lte
+from .exceptions import DocumentNotFoundError
 
 
 class MissingModelError(Exception):
+    pass
+
+
+class TooManyResults(Exception):
     pass
 
 
@@ -95,3 +100,15 @@ class QuerySet:
         if not self.model:
             raise MissingModelError
         return self.model.find_raw(self.query, **kwargs)
+
+    def first(self, **kwargs):
+        return next(self.__iter__(**kwargs))
+
+    def get(self, **kwargs):
+        instance = self.filter(**kwargs) if kwargs else self
+        count = instance.count()
+        if count > 1:
+            raise TooManyResults(f'too many items received: {count}')
+        if count == 0:
+            raise DocumentNotFoundError(instance.query)
+        return instance.first()

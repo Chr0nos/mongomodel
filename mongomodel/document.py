@@ -4,14 +4,7 @@ import pymongo
 
 from . import db, Field
 from .queryset import QuerySet
-
-
-class DocumentNotFoundError(Exception):
-    pass
-
-
-class DocumentInvalidError(Exception):
-    pass
+from .exceptions import DocumentNotFoundError, DocumentInvalidError
 
 
 class DocumentMeta(type):
