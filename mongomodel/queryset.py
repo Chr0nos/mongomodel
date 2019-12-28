@@ -15,14 +15,14 @@ class QuerySet:
         'nand': Nand()
     }
 
-    def filter(self, **kwargs):
+    def filter(self, **kwargs) -> 'QuerySet':
         for key, value in kwargs.items():
             args = key.split('__')
             args = self.apply_keywords(args)
             self.query.update(self.dict_path(args, value))
         return self
 
-    def exclude(self, **kwargs):
+    def exclude(self, **kwargs) -> 'QuerySet':
         for key, value in kwargs.items():
             args = self.apply_keywords(key.split('__'), invert=True)
             self.query.update(self.dict_path(args, value))
@@ -43,12 +43,18 @@ class QuerySet:
 
     @classmethod
     def apply_keywords(cls, *args, invert=False) -> List[str]:
-        lst = []
         attr = 'command' if not invert else 'inverse'
+
+        def apply_arg(arg):
+            try:
+                return getattr(cls.keywords[arg], attr)
+            except KeyError:
+                return arg
+
+        # return [apply_arg(arg) for arg in [path for path in args]]
+
+        lst = []
         for path in args:
             for arg in path:
-                try:
-                    lst.append(getattr(cls.keywords[arg], attr))
-                except KeyError:
-                    lst.append(arg)
+                lst.append(apply_arg(arg))
         return lst
