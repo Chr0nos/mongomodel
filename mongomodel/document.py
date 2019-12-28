@@ -1,8 +1,9 @@
 from typing import List
 from bson import ObjectId
 import pymongo
-# from . import db
+
 from . import db, Field
+from .queryset import QuerySet
 
 
 class DocumentNotFoundError(Exception):
@@ -13,7 +14,17 @@ class DocumentInvalidError(Exception):
     pass
 
 
-class Document:
+class DocumentMeta(type):
+    """Meta class of `Document`, allow to automaticaly set a QuerySet in Objects
+    attribute.
+    """
+    def __new__(cls, name, bases, optdict):
+        instance = super().__new__(cls, name, bases, optdict)
+        instance.objects = QuerySet(instance)
+        return instance
+
+
+class Document(metaclass=DocumentMeta):
     _id: ObjectId = None
     collection: str = None
     fields: List[str] = []
@@ -169,8 +180,8 @@ class Document:
 
     @classmethod
     def find(cls, filter: dict = None, sort=None, limit=None, offset=None,
-            **kwargs) -> List['Document']:
-        cursor = cls.get_collection().find(kwargs)
+             **kwargs) -> List['Document']:
+        cursor = cls.get_collection().find(filter=filter, **kwargs)
         if offset:
             cursor = cursor.skip(offset)
         if limit:

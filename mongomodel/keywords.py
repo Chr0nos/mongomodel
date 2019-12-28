@@ -38,3 +38,19 @@ class And(KeyWord):
 
 class Nand(KeyWord):
     command = '$nand'
+
+
+class Gte(KeyWord):
+    command = '$gte'
+
+    @property
+    def invert(self):
+        return '$lt'
+
+
+class Lte(KeyWord):
+    command = '$lte'
+
+    @property
+    def invert(self):
+        return '$gt'

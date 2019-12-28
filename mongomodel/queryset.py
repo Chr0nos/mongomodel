@@ -1,9 +1,14 @@
 from typing import List, Any
-from .keywords import Eq, Neq, In, Nin, And, Nand, Or, Nor
+from .keywords import Eq, Neq, In, Nin, And, Nand, Or, Nor, Gte, Lte
+
+
+class MissingModelError(Exception):
+    pass
 
 
 class QuerySet:
     query = {}
+    model = None
     keywords = {
         'eq': Eq(),
         'neq': Neq(),
@@ -12,23 +17,36 @@ class QuerySet:
         'in': In(),
         'nin': Nin(),
         'and': And(),
-        'nand': Nand()
+        'nand': Nand(),
+        'gte': Gte(),
+        'lte': Lte()
     }
 
+    def __init__(self, model=None):
+        self.model = model
+
+    def copy(self) -> 'QuerySet':
+        instance = QuerySet(self.model)
+        instance.query = self.query.copy()
+        return instance
+
     def filter(self, **kwargs) -> 'QuerySet':
+        instance = self.copy()
         for key, value in kwargs.items():
             args = key.split('__')
             args = self.apply_keywords(args)
-            self.query.update(self.dict_path(args, value))
-        return self
+            instance.query.update(self.dict_path(args, value))
+        return instance
 
     def exclude(self, **kwargs) -> 'QuerySet':
+        instance = self.copy()
         for key, value in kwargs.items():
             args = self.apply_keywords(key.split('__'), invert=True)
-            self.query.update(self.dict_path(args, value))
-        return self
+            instance.query.update(self.dict_path(args, value))
+        return instance
 
-    def dict_path(self, path: List[str], value: Any = None) -> dict:
+    @staticmethod
+    def dict_path(path: List[str], value: Any = None) -> dict:
         out = {}
         node = out
         last_node = None
@@ -58,3 +76,22 @@ class QuerySet:
             for arg in path:
                 lst.append(apply_arg(arg))
         return lst
+
+    def __iter__(self, **kwargs):
+        if not self.model:
+            raise MissingModelError
+        for instance in self.model.find(filter=self.query, **kwargs):
+            yield instance
+
+    def count(self) -> int:
+        if not self.model:
+            raise MissingModelError
+        return self.model.get_collection().count_documents(self.query)
+
+    def all(self, **kwargs):
+        return list(self.__iter__(**kwargs))
+
+    def raw(self, **kwargs):
+        if not self.model:
+            raise MissingModelError
+        return self.model.find_raw(self.query, **kwargs)
