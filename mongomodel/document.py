@@ -21,6 +21,7 @@ class Document(metaclass=DocumentMeta):
     _id: ObjectId = None
     collection: str = None
     fields: List[str] = []
+    objects: QuerySet = None
 
     def __init__(self, collection=None, **kwargs):
         self._id = kwargs.pop('_id', None)

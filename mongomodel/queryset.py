@@ -95,7 +95,7 @@ class QuerySet:
             raise MissingModelError
         return self.model.get_collection().count_documents(self.query)
 
-    def all(self, **kwargs):
+    def all(self, **kwargs) -> List['Document']:
         return list(self.__iter__(**kwargs))
 
     def raw(self, **kwargs):
