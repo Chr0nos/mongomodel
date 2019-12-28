@@ -1,5 +1,5 @@
 from typing import List, Any
-from .keywords import Eq, Neq, In, Nin, And, Nand, Or, Nor, Gte, Lte, Gt, Lt
+from .keywords import Eq, Neq, In, Nin, Gte, Lte, Gt, Lt, Exists
 from .exceptions import DocumentNotFoundError
 
 
@@ -15,18 +15,15 @@ class QuerySet:
     query = {}
     model = None
     keywords = {
-        'eq': Eq(),
-        'neq': Neq(),
-        'or': Or(),
-        'nor': Nor(),
-        'in': In(),
-        'nin': Nin(),
-        'and': And(),
-        'nand': Nand(),
-        'gte': Gte(),
-        'lte': Lte(),
-        'gt': Gt(),
-        'lt': Lt()
+        'eq': Eq,
+        'neq': Neq,
+        'in': In,
+        'nin': Nin,
+        'gte': Gte,
+        'lte': Lte,
+        'gt': Gt,
+        'lt': Lt,
+        'exists': Exists
     }
 
     def __init__(self, model=None):
@@ -40,16 +37,15 @@ class QuerySet:
     def filter(self, **kwargs) -> 'QuerySet':
         instance = self.copy()
         for key, value in kwargs.items():
-            args = key.split('__')
-            args = self.apply_keywords(args)
-            instance.query.update(self.dict_path(args, value))
+            path, value = self.apply_keywords(value, key.split('__'))
+            instance.query.update(self.dict_path(path, value))
         return instance
 
     def exclude(self, **kwargs) -> 'QuerySet':
         instance = self.copy()
         for key, value in kwargs.items():
-            args = self.apply_keywords(key.split('__'), invert=True)
-            instance.query.update(self.dict_path(args, value))
+            path, v = self.apply_keywords(value, key.split('__'), invert=True)
+            instance.query.update(self.dict_path(path, v))
         return instance
 
     @staticmethod
@@ -72,25 +68,17 @@ class QuerySet:
         return out
 
     @classmethod
-    def apply_keywords(cls, *args, invert=False) -> List[str]:
-        attr = 'command' if not invert else 'inverse'
+    def apply_keywords(cls, raw_value, path: List[str], invert=False):
+        if invert and path[-1] not in cls.keywords:
+            path.append('eq')
 
-        def apply_arg(arg):
+        for cmd in path:
             try:
-                return getattr(cls.keywords[arg], attr)
+                op = cls.keywords[cmd](raw_value)
+                return path[0:-1], op.as_mongo_expression(invert)
             except KeyError:
-                return arg
-
-        def apply_path(path: List[str]):
-            # explicitly set final equality argument.
-            if invert and path[-1] not in cls.keywords:
-                path.append('eq')
-            return [apply_arg(arg) for arg in path]
-
-        lst = []
-        for path in args:
-            lst.extend(apply_path(path))
-        return lst
+                pass
+        return path, raw_value
 
     def __iter__(self, **kwargs):
         if not self.model:

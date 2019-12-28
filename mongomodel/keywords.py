@@ -1,77 +1,65 @@
-class KeyWord:
-    command = None
+class Criteria:
+    def __init__(self, value=None):
+        self.value = value
 
-    @property
-    def inverse(self):
-        if self.command.startswith('$n'):
-            return '$' + self.command[2:]
-        return '$n' + self.command[1:]
+    def __hash__(self):
+        return hash(self.name)
 
+    def command(self, invert=False) -> str:
+        raise NotImplementedError('override this')
 
-class TopLevelKeyWord(KeyWord):
-    def __init__(self, *args):
-        self.expressions = args
+    def get_value(self, invert=False):
+        return self.value
 
-
-class Eq(KeyWord):
-    command = '$eq'
+    def as_mongo_expression(self, invert=False):
+        return {self.command(invert): self.get_value(invert)}
 
 
-class Neq(KeyWord):
-    command = '$neq'
+class Eq(Criteria):
+    def command(self, invert=False):
+        return '$eq' if not invert else '$neq'
 
 
-class Or(TopLevelKeyWord):
-    command = '$or'
+class Neq(Criteria):
+    def command(self, invert=False):
+        return '$neq' if not invert else '$eq'
 
 
-class Nor(TopLevelKeyWord):
-    command = '$nor'
+class In(Criteria):
+    def command(self, invert=False):
+        return '$in' if not invert else '$nin'
 
 
-class In(KeyWord):
-    command = '$in'
+class Nin(Criteria):
+    def command(self, invert=False):
+        return '$nin' if not invert else '$in'
 
 
-class Nin(KeyWord):
-    command = '$nin'
+class Gt(Criteria):
+    def command(self, invert=False):
+        return '$gt' if not invert else '$lte'
 
 
-class And(TopLevelKeyWord):
-    command = '$and'
+class Lt(Criteria):
+    def command(self, invert=False):
+        return '$lt' if not invert else '$gte'
 
 
-class Nand(TopLevelKeyWord):
-    command = '$nand'
+class Lte(Criteria):
+    def command(self, invert=False):
+        return '$lte' if not invert else '$gt'
 
 
-class Gte(KeyWord):
-    command = '$gte'
-
-    @property
-    def inverse(self):
-        return '$lt'
+class Gte(Criteria):
+    def command(self, invert=False):
+        return '$gte' if not invert else '$lt'
 
 
-class Lte(KeyWord):
-    command = '$lte'
+class Exists(Criteria):
+    def command(self, invert=False):
+        return '$exists'
 
-    @property
-    def inverse(self):
-        return '$gt'
-
-
-class Lt(KeyWord):
-    command = '$lt'
-
-    @property
-    def inverse(self):
-        return '$gte'
-
-
-class Gt(KeyWord):
-    command = '$gt'
-
-    @property
-    def inverse(self):
-        return '$lte'
+    def get_value(self, invert=False):
+        if invert:
+            return self.value is False
+        return self.value
