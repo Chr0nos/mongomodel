@@ -179,3 +179,36 @@ Book.insert_many(books)
 At this point all inserted (valids) book will have an `_id` property,
 In case of invalid documents, no errors will be raised but the document will be
 ignored.
+
+
+## QuerySet
+All `Document` has a `object` attribute (created by a metaclass factory), wich
+is a `QuerySet` instance pointing on the current `model`
+
+with the `User` example
+```python
+from examples.user import User, mongomodel
+
+# setup the database
+mongomodel.setup_database('127.0.0.1', 'test')
+
+# get all users, the .all() will iterate over ALL results and put them in a list
+User.objects.all()
+
+# to iterate in more efficient way just iter over the `QuerySet` object
+for user in User.objects:
+	print(user)
+
+# search for all admin user with age higher than 30 years old
+# the .filter expression return a `QuerySet` object, so you can chain them
+User.objects.filter(is_admin=True, age__gt=30)
+User.objects.filter(is_admin=True).exclude(age__gte=30)
+# Both expressions does the same here.
+
+# To see what a query will look like you can access to the .query parameter of
+# the queryset
+User.objects.filter(is_admin__exists=True).query
+
+# will give us:
+{'is_admin': {'$exists': True}}
+```
