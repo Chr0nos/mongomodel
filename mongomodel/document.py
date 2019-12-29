@@ -71,6 +71,13 @@ class Document(metaclass=DocumentMeta):
             self.fields.remove(name)
         super().__delattr__(name)
 
+    def pre_save(self, content: dict, is_new=False) -> None:
+        """Called just before calling the database to send the document
+        content is all fields formated and ready for the database, including
+        default values
+        """
+        pass
+
     def save(self, session=None):
         """Update or insert the current document to the database if needed
         then return the response from the database
@@ -78,12 +85,14 @@ class Document(metaclass=DocumentMeta):
         if not self.is_valid():
             raise DocumentInvalidError
         collection = self.get_collection()
+        document_content = self.to_dict()
+        self.pre_save(document_content, self._id is None)
         if not self._id:
-            response = collection.insert_one(self.to_dict(), session=session)
+            response = collection.insert_one(document_content, session=session)
             self._id = response.inserted_id
             return response
         return collection.update_one({'_id': self._id},
-                                     {'$set': self.to_dict()},
+                                     {'$set': document_content},
                                      session=session)
 
     def commit(self, **kwargs) -> 'Document':

@@ -33,9 +33,9 @@ class Field:
             return self.default()
         return self.value
 
-    def copy(self):
+    def copy(self, **kwargs):
         field = type(self)(value=self.value, required=self.required,
-                           default=self.default)
+                           default=self.default, **kwargs)
         return field
 
 
@@ -90,6 +90,9 @@ class TypeField(Field):
                 raise ValueError(value)
         elif not isinstance(value, self.type):
             raise ValueError(value)
+
+    def copy(self):
+        return super().copy(required_type=self.type)
 
 
 class FloatField(TypeField):
