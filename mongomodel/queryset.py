@@ -36,18 +36,48 @@ class QuerySet:
         return instance
 
     def filter(self, **kwargs) -> 'QuerySet':
-        instance = self.copy()
-        for key, value in kwargs.items():
-            path, value = self.apply_keywords(value, key.split('__'))
-            instance.query.update(self.dict_path(path, value))
-        return instance
+        return self._inner_filter(False, **kwargs)
 
     def exclude(self, **kwargs) -> 'QuerySet':
+        return self._inner_filter(True, **kwargs)
+
+    def _inner_filter(self, invert=False, **kwargs) -> 'QuerySet':
         instance = self.copy()
         for key, value in kwargs.items():
-            path, v = self.apply_keywords(value, key.split('__'), invert=True)
-            instance.query.update(self.dict_path(path, v))
+            path, value = self.apply_keywords(value, key.split('__'),
+                                              invert=invert)
+            try:
+                self.insert_criteria(instance, path, value)
+            except KeyError:
+                print('adding', path)
+                new_query_argument = self.dict_path(path, value)
+                instance.query.update(new_query_argument)
         return instance
+
+    @staticmethod
+    def read_dict_path(data: dict, path: List['str']):
+        x = data
+        for node in path:
+            x = x[node]
+        return x
+
+    @classmethod
+    def insert_criteria(cls, instance: 'QuerySet', path: List['str'], value):
+        """Try to insert the new criteria in the `instance` query,
+        if the path does not exists this method will raise a `KeyError`
+        in case of an old occurence of a path in the query, the criteria will
+        be transformed in a dict if possible and then updated with the new
+        criteria
+        """
+        old_criteria = cls.read_dict_path(instance.query, path)
+        if not isinstance(old_criteria, dict):
+            old_criteria = {'$eq': old_criteria}
+            # TODO : OPTIMIZE THIS !!!
+            cls.read_dict_path(
+                instance.query, path[0:-1])[path[-1]] = old_criteria
+        # print('insert', old_criteria, value, 'to', path)
+        old_criteria.update(value)
+        # raise KeyError
 
     @staticmethod
     def dict_path(path: List[str], value: Any = None) -> dict:

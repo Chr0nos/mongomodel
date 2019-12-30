@@ -17,12 +17,12 @@ class Criteria:
 
 class Eq(Criteria):
     def command(self, invert=False):
-        return '$eq' if not invert else '$neq'
+        return '$eq' if not invert else '$ne'
 
 
 class Neq(Criteria):
     def command(self, invert=False):
-        return '$neq' if not invert else '$eq'
+        return '$ne' if not invert else '$eq'
 
 
 class In(Criteria):
