@@ -49,7 +49,6 @@ class QuerySet:
             try:
                 self.insert_criteria(instance, path, value)
             except KeyError:
-                print('adding', path)
                 new_query_argument = self.dict_path(path, value)
                 instance.query.update(new_query_argument)
         return instance
