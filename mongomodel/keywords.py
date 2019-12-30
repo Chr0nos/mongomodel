@@ -63,3 +63,13 @@ class Exists(Criteria):
         if invert:
             return self.value is False
         return self.value
+
+
+class Regex(Criteria):
+    def command(self, invert=False):
+        return '$regex'
+
+    def get_value(self, invert=False):
+        if not invert:
+            return self.value
+        raise NotImplementedError('Inverting regex is not implemented yet')

@@ -1,5 +1,5 @@
 from typing import List, Any
-from .keywords import Eq, Neq, In, Nin, Gte, Lte, Gt, Lt, Exists
+from .keywords import Eq, Neq, In, Nin, Gte, Lte, Gt, Lt, Exists, Regex
 from .exceptions import DocumentNotFoundError
 
 
@@ -24,7 +24,8 @@ class QuerySet:
         'lte': Lte,
         'gt': Gt,
         'lt': Lt,
-        'exists': Exists
+        'exists': Exists,
+        'regex': Regex
     }
 
     def __init__(self, model=None):
