@@ -125,10 +125,34 @@ class QuerySet:
     def all(self, **kwargs) -> List['Document']:
         return list(self.__iter__(**kwargs))
 
-    def raw(self, **kwargs):
+    def raw(self, limit=None, sort: List[str] = None, offset: int =None,
+            **kwargs):
         if not self.model:
             raise MissingModelError
-        return self.model.find_raw(self.query, **kwargs)
+        cursor = self.model.find_raw(self.query, **kwargs)
+        return self._get_cursor(cursor, sort, offset, limit)
+
+    def raw_all(self, **kwargs):
+        """This function is just a helper for `QuerySet.raw` to quickly view
+        the data state in the database without any abstraction on Document
+        """
+        return list(self.raw(**kwargs))
+
+    @classmethod
+    def _get_cursor(cls, cursor,
+                    sort: List[str]= None,
+                    offset: int = None,
+                    limit: int = None):
+        """Aplly any sort/offset/limit to the given cursor and return the
+        updated cursor.
+        """
+        if sort:
+            cursor = cursor.sort(cls.sort_instruction(sort))
+        if offset:
+            cursor = cursor.offset(offset)
+        if limit:
+            cursor = cursor.limit(limit)
+        return cursor
 
     def first(self, **kwargs):
         try:
@@ -159,3 +183,16 @@ class QuerySet:
             raise MissingModelError
         return self.model.get_collection().distinct(
             key=key, query=self.query, **kwargs)
+
+    @staticmethod
+    def sort_instruction(order: List[str]) -> List[tuple]:
+        """Convert a list for format:
+        ['name', '-age'] to:
+        [('name': 1), ('age': -1)]
+        """
+        def generate_tuple(word) -> tuple:
+            if word.startswith('-'):
+                return (word[1:], -1)
+            return (word, 1)
+
+        return [generate_tuple(word) for word in order]
