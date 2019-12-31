@@ -83,7 +83,7 @@ class Document(metaclass=DocumentMeta):
         then return the response from the database
         """
         if not self.is_valid():
-            raise DocumentInvalidError
+            raise DocumentInvalidError(self.invalid_fields())
         collection = self.get_collection()
         document_content = self.to_dict()
         self.pre_save(document_content, self._id is None)
@@ -134,7 +134,7 @@ class Document(metaclass=DocumentMeta):
     def is_valid(self) -> bool:
         for field_name in self.fields:
             field = object.__getattribute__(self, field_name)
-            if not field.is_valid():
+            if not field.is_valid() and field.required:
                 return False
         return True
 

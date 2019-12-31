@@ -149,7 +149,7 @@ class QuerySet:
         if sort:
             cursor = cursor.sort(cls.sort_instruction(sort))
         if offset:
-            cursor = cursor.offset(offset)
+            cursor = cursor.skip(offset)
         if limit:
             cursor = cursor.limit(limit)
         return cursor
