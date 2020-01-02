@@ -42,8 +42,7 @@ class TestQuerySet:
         assert response == 1234
         count.assert_called_once()
 
-    @patch('mongomodel.queryset.QuerySet')
-    def test_raw(self, mock_qs):
+    def test_raw(self):
         cursor = object()
         model = Mock()
         model.find_raw.return_value = cursor
