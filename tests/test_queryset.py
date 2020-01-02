@@ -1,7 +1,7 @@
 import pytest
 
 from mock import patch, Mock
-from mongomodel.queryset import QuerySet
+from mongomodel.queryset import QuerySet, MissingModelError
 
 
 class TestQuerySet:
@@ -54,7 +54,42 @@ class TestQuerySet:
         qs._get_cursor.assert_called_with(cursor, ['name'], 3, 1)
 
     def test_raw_without_model(self):
-        from mongomodel.queryset import MissingModelError
 
         with pytest.raises(MissingModelError):
             QuerySet().raw()
+
+    @pytest.mark.parametrize('sort, offset, limit', [
+        (None, None, None),
+        (['date'], None, None),
+        (None, 10, None),
+        (None, None, 10),
+        (['name'], 10, 20)
+    ])
+    def test_get_cursor(self, sort, offset, limit):
+        cursor = Mock()
+        cursor.sort.return_value = cursor
+        cursor.skip.return_value = cursor
+        cursor.limit.return_value = cursor
+
+        new_cursor = QuerySet._get_cursor(cursor, sort, offset, limit)
+
+        if sort:
+            cursor.sort.assert_called()
+        if offset:
+            cursor.skip.assert_called_with(offset)
+        if limit:
+            cursor.limit.assert_called_with(limit)
+
+        assert new_cursor == cursor
+
+    def test_distinct_without_model_raises(self):
+        with pytest.raises(MissingModelError):
+            QuerySet().distinct('_id')
+
+    def test_add(self):
+        a = QuerySet().filter(age=30)
+        b = QuerySet('test').filter(is_admin=False)
+        c = a + b
+        assert isinstance(c, QuerySet)
+        assert c.query == {'age': 30, 'is_admin': False}
+        assert c.model == 'test'
