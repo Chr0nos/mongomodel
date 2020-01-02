@@ -6,13 +6,15 @@ from mongomodel.queryset import QuerySet
 
 class TestQuerySet:
     def test_instanciate_and_delete(self):
-        qs = QuerySet()
+        qs = QuerySet(1234)
+        assert qs.model == 1234
         del qs
 
     def test_queryset_copy(self):
-        a = QuerySet()
+        a = QuerySet('blah')
         b = a.copy()
         assert a is not b
+        assert b.model == 'blah'
 
     def test_read_from_dict(self):
         data = {
