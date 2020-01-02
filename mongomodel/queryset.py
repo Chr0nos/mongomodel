@@ -154,7 +154,7 @@ class QuerySet:
 
     def __add__(self, b: 'QuerySet') -> 'QuerySet':
         instance = self.copy()
-        instance.query.update(b.query)
+        dict_deep_update(instance.query, b.query, on_conflict=merge_values)
         if not instance.model and b.model:
             instance.model = b.model
         return instance
