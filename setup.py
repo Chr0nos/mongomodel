@@ -6,11 +6,11 @@ def get_long_description() -> str:
 
 setuptools.setup(
     name='mongomodel',
-    version='0.2.1',
+    version='0.2.2',
     scripts=[],
     author="Sébastien Nicolet",
     author_email="snicolet@student.42.fr",
-    description="Tiny mongodb odm",
+    description="Tiny mongodb odm, it mimics the orm of django",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/Chr0nos/mongorm",
