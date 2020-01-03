@@ -1,6 +1,7 @@
 from typing import List, Any
 from .keywords import Eq, Neq, In, Nin, Gte, Lte, Gt, Lt, Exists, Regex
 from .exceptions import DocumentNotFoundError
+from .tools import dict_deep_update, merge_values
 
 
 class MissingModelError(Exception):
@@ -47,11 +48,9 @@ class QuerySet:
         for key, value in kwargs.items():
             path, value = self.apply_keywords(value, key.split('__'),
                                               invert=invert)
-            try:
-                self.insert_criteria(instance, path, value)
-            except KeyError:
-                new_query_argument = self.dict_path(path, value)
-                instance.query.update(new_query_argument)
+            filter_dict = self.dict_path(path, value)
+            dict_deep_update(instance.query, filter_dict,
+                             on_conflict=merge_values)
         return instance
 
     @staticmethod
@@ -60,24 +59,6 @@ class QuerySet:
         for node in path:
             x = x[node]
         return x
-
-    @classmethod
-    def insert_criteria(cls, instance: 'QuerySet', path: List['str'], value):
-        """Try to insert the new criteria in the `instance` query,
-        if the path does not exists this method will raise a `KeyError`
-        in case of an old occurence of a path in the query, the criteria will
-        be transformed in a dict if possible and then updated with the new
-        criteria
-        """
-        old_criteria = cls.read_dict_path(instance.query, path)
-        if not isinstance(old_criteria, dict):
-            old_criteria = {'$eq': old_criteria}
-            # TODO : OPTIMIZE THIS !!!
-            cls.read_dict_path(
-                instance.query, path[0:-1])[path[-1]] = old_criteria
-        # print('insert', old_criteria, value, 'to', path)
-        old_criteria.update(value)
-        # raise KeyError
 
     @staticmethod
     def dict_path(path: List[str], value: Any = None) -> dict:
@@ -173,7 +154,7 @@ class QuerySet:
 
     def __add__(self, b: 'QuerySet') -> 'QuerySet':
         instance = self.copy()
-        instance.query.update(b.query)
+        dict_deep_update(instance.query, b.query, on_conflict=merge_values)
         if not instance.model and b.model:
             instance.model = b.model
         return instance
