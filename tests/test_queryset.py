@@ -1,7 +1,9 @@
 import pytest
 
+from bson import ObjectId
 from mock import patch, Mock
-from mongomodel.queryset import QuerySet, MissingModelError
+from mongomodel.queryset import QuerySet, MissingModelError, TooManyResults, \
+                                DocumentNotFoundError
 
 
 class TestQuerySet:
@@ -93,3 +95,37 @@ class TestQuerySet:
         assert isinstance(c, QuerySet)
         assert c.query == {'age': 30, 'is_admin': False}
         assert c.model == 'test'
+
+    @pytest.mark.skip('broken')
+    def test_filter_nested(self):
+        qs = QuerySet() \
+            .filter(age=30) \
+            .exclude(age__gte=40) \
+            .filter(age__nested__eq=10)
+        assert isinstance(qs.query['age'], dict)
+        assert qs.query['age']['$eq'] == 30
+        assert qs.query['age']['$lt'] == 40
+        assert qs.query['age']['nested']['$eq'] == 10
+
+    def test_get_normal(self):
+        obj = {'_id': ObjectId()}
+        qs = QuerySet(Mock())
+        qs.model.find_raw.return_value.limit.return_value = [obj]
+        instance = qs.get(_id=obj['_id'])
+        qs.model.assert_called_with(**obj)
+
+    def test_get_too_many_results(self):
+        results = [
+            {'_id': ObjectId()},
+            {'_id': ObjectId()}
+        ]
+        qs = QuerySet(Mock())
+        qs.model.find_raw.return_value.limit.return_value = results
+        with pytest.raises(TooManyResults):
+            qs.get()
+
+    def test_get_no_result(self):
+        qs = QuerySet(Mock())
+        qs.model.find_raw.return_value.limit.return_value = []
+        with pytest.raises(DocumentNotFoundError):
+            qs.get()
