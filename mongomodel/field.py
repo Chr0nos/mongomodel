@@ -97,6 +97,7 @@ class TypeField(Field):
 
 class FloatField(TypeField):
     def __init__(self, *args, **kwargs):
+        kwargs.pop('required_type', None)
         super().__init__(*args, required_type=float, **kwargs)
 
 
