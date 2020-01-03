@@ -1,6 +1,6 @@
 import pytest
 from mongomodel.field import Field, StringField, EmailField, IntegerField, \
-                             RegexField, TypeField
+                             RegexField, TypeField, FloatField
 
 
 class TestField:
@@ -159,3 +159,11 @@ class TestTypeField:
         field = TypeField(value=input, required_type=required_type)
         with pytest.raises(ValueError):
             field.check()
+
+class TestFloatField:
+    def test_float_copy(self):
+        a = FloatField(10.0)
+        b = a.copy()
+        assert isinstance(b, FloatField)
+        assert b is not a
+        assert a.value == b.value

@@ -96,7 +96,6 @@ class TestQuerySet:
         assert c.query == {'age': 30, 'is_admin': False}
         assert c.model == 'test'
 
-    @pytest.mark.skip('broken')
     def test_filter_nested(self):
         qs = QuerySet() \
             .filter(age=30) \

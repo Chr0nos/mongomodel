@@ -6,7 +6,7 @@ def get_long_description() -> str:
 
 setuptools.setup(
     name='mongomodel',
-    version='0.1',
+    version='0.2.1',
     scripts=[],
     author="Sébastien Nicolet",
     author_email="snicolet@student.42.fr",
@@ -20,4 +20,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    install_requires=['pymongo>=3.9.0']
 )
