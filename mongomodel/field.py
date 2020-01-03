@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 
 class Field:
@@ -99,6 +100,18 @@ class FloatField(TypeField):
     def __init__(self, *args, **kwargs):
         kwargs.pop('required_type', None)
         super().__init__(*args, required_type=float, **kwargs)
+
+
+class DateTimeField(TypeField):
+    def __init__(self, *args, **kwargs):
+        kwargs['required_type'] = datetime
+        super().__init__(*args, **kwargs)
+
+
+class BoolField(TypeField):
+    def __init__(self, *args, **kwargs):
+        kwargs['required_type'] = bool
+        super().__init__(*args, **kwargs)
 
 
 class RegexField(StringField):
