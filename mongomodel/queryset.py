@@ -92,9 +92,11 @@ class QuerySet:
                 pass
         return path, raw_value
 
-    def __iter__(self, **kwargs):
+    def __iter__(self, sort=None, **kwargs):
         if not self.model:
             raise MissingModelError
+        if sort:
+            kwargs['sort'] = self.sort_instruction(sort)
         for instance in self.model.find(filter=self.query, **kwargs):
             yield instance
 
