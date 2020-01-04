@@ -52,8 +52,9 @@ class TestQuerySet:
         qs = QuerySet(model)
         qs._get_cursor = Mock()
         qs._get_cursor.return_value = cursor
-        assert qs.raw(1, ['name'], 3) == cursor
-        qs._get_cursor.assert_called_with(cursor, ['name'], 3, 1)
+        qs = qs.sort(['name']).limit(3).skip(1)
+        assert qs.raw() == cursor
+        qs._get_cursor.assert_called()
 
     def test_raw_without_model(self):
 
@@ -73,7 +74,8 @@ class TestQuerySet:
         cursor.skip.return_value = cursor
         cursor.limit.return_value = cursor
 
-        new_cursor = QuerySet._get_cursor(cursor, sort, offset, limit)
+        qs = QuerySet().sort(sort).skip(offset).limit(limit)
+        new_cursor = qs._get_cursor(cursor)
 
         if sort:
             cursor.sort.assert_called()

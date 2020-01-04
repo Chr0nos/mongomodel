@@ -28,6 +28,9 @@ class QuerySet:
         'exists': Exists,
         'regex': Regex
     }
+    _sort = None
+    _skip = None
+    _limit = None
 
     def __init__(self, model=None):
         self.model = model
@@ -36,6 +39,18 @@ class QuerySet:
         instance = QuerySet(self.model)
         instance.query = self.query.copy()
         return instance
+
+    def sort(self, order):
+        self._sort = self.sort_instruction(order) if order else None
+        return self
+
+    def skip(self, n: int):
+        self._skip = n
+        return self
+
+    def limit(self, n: int):
+        self._limit = n
+        return self
 
     def filter(self, **kwargs) -> 'QuerySet':
         return self._inner_filter(False, **kwargs)
@@ -92,11 +107,15 @@ class QuerySet:
                 pass
         return path, raw_value
 
-    def __iter__(self, sort=None, **kwargs):
+    def __iter__(self, **kwargs):
         if not self.model:
             raise MissingModelError
-        if sort:
-            kwargs['sort'] = self.sort_instruction(sort)
+        if self._sort:
+            kwargs['sort'] = self._sort
+        if self._skip:
+            kwargs['offset'] = self._skip
+        if self._limit:
+            kwargs['limit'] = self._limit
         for instance in self.model.find(filter=self.query, **kwargs):
             yield instance
 
@@ -108,12 +127,11 @@ class QuerySet:
     def all(self, **kwargs) -> List['Document']:
         return list(self.__iter__(**kwargs))
 
-    def raw(self, limit=None, sort: List[str] = None, offset: int =None,
-            **kwargs):
+    def raw(self, **kwargs):
         if not self.model:
             raise MissingModelError
         cursor = self.model.find_raw(self.query, **kwargs)
-        return self._get_cursor(cursor, sort, offset, limit)
+        return self._get_cursor(cursor)
 
     def raw_all(self, **kwargs):
         """This function is just a helper for `QuerySet.raw` to quickly view
@@ -121,20 +139,16 @@ class QuerySet:
         """
         return list(self.raw(**kwargs))
 
-    @classmethod
-    def _get_cursor(cls, cursor,
-                    sort: List[str]= None,
-                    offset: int = None,
-                    limit: int = None):
+    def _get_cursor(self, cursor):
         """Aplly any sort/offset/limit to the given cursor and return the
         updated cursor.
         """
-        if sort:
-            cursor = cursor.sort(cls.sort_instruction(sort))
-        if offset:
-            cursor = cursor.skip(offset)
-        if limit:
-            cursor = cursor.limit(limit)
+        if self._sort:
+            cursor = cursor.sort(self._sort)
+        if self._skip:
+            cursor = cursor.skip(self._skip)
+        if self._limit:
+            cursor = cursor.limit(self._limit)
         return cursor
 
     def first(self, **kwargs):
@@ -179,3 +193,12 @@ class QuerySet:
             return (word, 1)
 
         return [generate_tuple(word) for word in order]
+
+    def delete(self):
+        if not self.model:
+            raise MissingModelError
+        collection = self.model.get_collection()
+        cursor = self._get_cursor(collection.find(self.query))
+        ids = cursor.distinct('_id')
+        return collection.delete_many({'_id': {'$in': ids}})
+
