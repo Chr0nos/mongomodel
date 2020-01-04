@@ -38,6 +38,9 @@ class QuerySet:
     def copy(self) -> 'QuerySet':
         instance = QuerySet(self.model)
         instance.query = self.query.copy()
+        instance._sort = self._sort
+        instance._skip = self._skip
+        instance._limit = self._limit
         return instance
 
     def sort(self, order):
