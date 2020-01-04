@@ -26,7 +26,7 @@ To create a new document model you have to make a new class from `Document`
 import mongomodel
 
 
-class User(monhorm.Document):
+class User(mongomodel.Document):
 	collection = 'user'
 	name = mongomodel.StringField(maxlen=255)
 	email = mongomodel.EmailField(maxlen=255)
