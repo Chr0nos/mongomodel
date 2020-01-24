@@ -335,3 +335,23 @@ class TestDocument:
         doc.f = field_obj
         with pytest.raises(doc.DocumentInvalid):
             doc.is_valid(raises=True)
+
+    @no_database
+    def test_proper_error_handling(self):
+        class Book(Document):
+            pass
+
+        class User(Document):
+            pass
+
+        with pytest.raises(Book.DocumentError):
+            try:
+                raise Book.DocumentError()
+            except User.DocumentError:
+                pass
+
+        with pytest.raises(Book.DoesNotExist):
+            try:
+                raise Book.DoesNotExist()
+            except User.DoesNotExist:
+                pass

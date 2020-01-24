@@ -13,6 +13,22 @@ class DocumentMeta(type):
     def __new__(cls, name, bases, optdict):
         instance = super().__new__(cls, name, bases, optdict)
         instance.objects = QuerySet(instance)
+
+        # declaration of thoses errors here to have proper errors per
+        # documents kinds instead of global ones
+        class DocumentError(Exception):
+            pass
+
+        class DoesNotExist(DocumentError):
+            pass
+
+        class DocumentInvalid(DocumentError):
+            pass
+
+        instance.DocumentError = DocumentError
+        instance.DoesNotExist = DoesNotExist
+        instance.DocumentInvalid = DocumentInvalid
+
         return instance
 
 
@@ -243,12 +259,3 @@ class Document(metaclass=DocumentMeta):
         for doc in doclist.values():
             doc._id = None
         return documents
-
-    class DocumentError(Exception):
-        pass
-
-    class DoesNotExist(DocumentError):
-        pass
-
-    class DocumentInvalid(DocumentError):
-        pass
