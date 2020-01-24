@@ -44,16 +44,19 @@ class QuerySet:
         return instance
 
     def sort(self, order):
-        self._sort = self.sort_instruction(order) if order else None
-        return self
+        instance = self.copy()
+        instance._sort = self.sort_instruction(order) if order else None
+        return instance
 
     def skip(self, n: int):
-        self._skip = n
-        return self
+        instance = self.copy()
+        instance._skip = n
+        return instance
 
     def limit(self, n: int):
-        self._limit = n
-        return self
+        instance = self.copy()
+        instance._limit = n
+        return instance
 
     def filter(self, **kwargs) -> 'QuerySet':
         return self._inner_filter(False, **kwargs)
@@ -204,4 +207,3 @@ class QuerySet:
         cursor = self._get_cursor(collection.find(self.query))
         ids = cursor.distinct('_id')
         return collection.delete_many({'_id': {'$in': ids}})
-

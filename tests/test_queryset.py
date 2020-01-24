@@ -45,16 +45,22 @@ class TestQuerySet:
         count.assert_called_once()
 
     def test_raw(self):
-        cursor = object()
+        cursor = Mock()
+        cursor.sort.return_value = cursor
+        cursor.limit.return_value = cursor
+        cursor.skip.return_value = cursor
+
         model = Mock()
         model.find_raw.return_value = cursor
 
         qs = QuerySet(model)
         qs._get_cursor = Mock()
         qs._get_cursor.return_value = cursor
-        qs = qs.sort(['name']).limit(3).skip(1)
-        assert qs.raw() == cursor
-        qs._get_cursor.assert_called()
+        assert qs.sort(['name']).limit(3).skip(1).raw() == cursor
+
+        cursor.sort.assert_called()
+        cursor.limit.assert_called_with(3)
+        cursor.skip.assert_called_with(1)
 
     def test_raw_without_model(self):
 
