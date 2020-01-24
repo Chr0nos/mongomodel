@@ -2,8 +2,7 @@ import pytest
 
 from bson import ObjectId
 from mock import patch, Mock
-from mongomodel.queryset import QuerySet, MissingModelError, TooManyResults, \
-                                DocumentNotFoundError
+from mongomodel.queryset import QuerySet, MissingModelError, TooManyResults
 
 
 class TestQuerySet:
@@ -132,7 +131,10 @@ class TestQuerySet:
             qs.get()
 
     def test_get_no_result(self):
+        from mongomodel.document import Document
+
         qs = QuerySet(Mock())
         qs.model.find_raw.return_value.limit.return_value = []
-        with pytest.raises(DocumentNotFoundError):
+        qs.model.DoesNotExist = Document.DoesNotExist
+        with pytest.raises(Document.DoesNotExist):
             qs.get()

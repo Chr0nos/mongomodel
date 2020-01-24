@@ -2,8 +2,7 @@ import pytest
 from mock import patch, MagicMock
 
 from bson import ObjectId
-from mongomodel import (Document, Field, DocumentInvalidError,
-                        DocumentNotFoundError)
+from mongomodel import Document, Field
 from datetime import datetime
 
 from functools import wraps
@@ -67,7 +66,7 @@ class TestDocument:
     @patch('mongomodel.document.db')
     def test_from_unknow_id(self, mock_db):
         mock_db.__getitem__.return_value.find_one.return_value = None
-        with pytest.raises(DocumentNotFoundError):
+        with pytest.raises(Document.DoesNotExist):
             Document.from_id('test')
 
     @patch('mongomodel.document.db')
@@ -91,7 +90,7 @@ class TestDocument:
     def test_save_invalid(self):
         doc = Document(collection='test')
         doc.is_valid = lambda: False
-        with pytest.raises(DocumentInvalidError):
+        with pytest.raises(Document.DocumentInvalid):
             doc.save()
 
     @no_database

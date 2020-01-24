@@ -4,7 +4,6 @@ import pymongo
 
 from . import db, Field
 from .queryset import QuerySet
-from .exceptions import DocumentNotFoundError, DocumentInvalidError
 
 
 class DocumentMeta(type):
@@ -83,7 +82,7 @@ class Document(metaclass=DocumentMeta):
         then return the response from the database
         """
         if not self.is_valid():
-            raise DocumentInvalidError(self.invalid_fields())
+            raise self.DocumentInvalid(self.invalid_fields())
         collection = self.get_collection()
         document_content = self.to_dict()
         self.pre_save(document_content, self._id is None)
@@ -154,7 +153,7 @@ class Document(metaclass=DocumentMeta):
         collection = collection if collection else cls.collection
         resource = db[collection].find_one({'_id': document_id})
         if not resource:
-            raise DocumentNotFoundError
+            raise cls.DoesNotExist(document_id)
         document = cls(**resource, collection=collection)
         return document
 
@@ -242,3 +241,12 @@ class Document(metaclass=DocumentMeta):
         for doc in doclist.values():
             doc._id = None
         return documents
+
+    class DocumentError(Exception):
+        pass
+
+    class DoesNotExist(DocumentError):
+        pass
+
+    class DocumentInvalid(DocumentError):
+        pass

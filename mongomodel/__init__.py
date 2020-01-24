@@ -7,5 +7,5 @@ db: pymongo.database.Database = client.test
 
 from .field import Field, StringField, EmailField, RegexField, IntegerField, \
                    TypeField, FloatField, DateTimeField, BoolField
-from .document import Document, DocumentInvalidError, DocumentNotFoundError
+from .document import Document
 from .conf import setup_database
