@@ -326,3 +326,12 @@ class TestDocument:
                                             session=None)
         for doc in documents_list:
             assert doc._id is None
+
+    @no_database
+    def test_is_valid_with_raises(self):
+        field_obj = Field()
+        field_obj.is_valid = lambda: False
+        doc = Document(collection='test')
+        doc.f = field_obj
+        with pytest.raises(doc.DocumentInvalid):
+            doc.is_valid(raises=True)

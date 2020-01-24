@@ -130,10 +130,12 @@ class Document(metaclass=DocumentMeta):
         """
         return super().__getattribute__(name)
 
-    def is_valid(self) -> bool:
+    def is_valid(self, raises=False) -> bool:
         for field_name in self.fields:
             field = object.__getattribute__(self, field_name)
             if not field.is_valid() and field.required:
+                if raises:
+                    raise self.DocumentInvalid(self._id)
                 return False
         return True
 
