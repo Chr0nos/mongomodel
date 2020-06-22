@@ -207,3 +207,11 @@ class QuerySet:
         cursor = self._get_cursor(collection.find(self.query))
         ids = cursor.distinct('_id')
         return collection.delete_many({'_id': {'$in': ids}})
+
+    def apply(self, function, userdata=None):
+        """Apply the given `function` to each model in the queryset
+        it's possible to pass a custom `userdata` wich will be given to the
+        function at each call
+        """
+        for document in self:
+            function(document, userdata)

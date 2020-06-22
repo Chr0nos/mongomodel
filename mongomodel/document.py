@@ -12,7 +12,9 @@ class DocumentMeta(type):
     """
     def __new__(cls, name, bases, optdict):
         instance = super().__new__(cls, name, bases, optdict)
-        instance.objects = QuerySet(instance)
+        manager = getattr(instance, 'objects', None)
+        if not manager:
+            instance.objects = QuerySet(instance)
 
         # declaration of thoses errors here to have proper errors per
         # documents kinds instead of global ones

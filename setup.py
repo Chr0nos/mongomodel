@@ -1,12 +1,14 @@
 import setuptools
 
+
 def get_long_description() -> str:
     with open('README.md') as fp:
         return fp.read()
 
+
 setuptools.setup(
     name='mongomodel',
-    version='0.3.2',
+    version='0.3.3',
     scripts=[],
     author="Sébastien Nicolet",
     author_email="snicolet@student.42.fr",
