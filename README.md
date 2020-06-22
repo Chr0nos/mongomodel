@@ -212,3 +212,11 @@ User.objects.filter(is_admin__exists=True).query
 # will give us:
 {'is_admin': {'$exists': True}}
 ```
+
+### Ordering
+you can also use the `.sort` method in QuerySet, the sort mehtod take a list or
+a tupple of str like
+```python
+qs = User.objects.sort(('-username', 'age'))
+```
+
