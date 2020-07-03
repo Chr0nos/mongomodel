@@ -39,6 +39,7 @@ class Document(metaclass=DocumentMeta):
     collection: str = None
     fields: List[str] = []
     objects: QuerySet = None
+    db = db
 
     def __init__(self, collection=None, **kwargs):
         self._id = kwargs.pop('_id', None)
@@ -171,7 +172,7 @@ class Document(metaclass=DocumentMeta):
     @classmethod
     def from_id(cls, document_id: ObjectId, collection=None) -> 'Document':
         collection = collection if collection else cls.collection
-        resource = db[collection].find_one({'_id': document_id})
+        resource = cls.db[collection].find_one({'_id': document_id})
         if not resource:
             raise cls.DoesNotExist(document_id)
         document = cls(**resource, collection=collection)
@@ -224,7 +225,7 @@ class Document(metaclass=DocumentMeta):
         collection: str = getattr(cls, 'collection')
         if not collection:
             collection = cls.__name__.lower()
-        return db[collection]
+        return cls.db[collection]
 
     @classmethod
     def insert_many(cls, documents: List['Document'],
