@@ -1,4 +1,4 @@
-from typing import List, Tuple, Any, MutableMapping, Callable
+from typing import Any, MutableMapping, Callable
 
 
 def take_last_value(key: str, target: Any, *sources: Any) -> Any:
@@ -39,7 +39,7 @@ def merge_values(key: str, target: Any, *sources: Any) -> Any:
 
 
 def dict_deep_update(target: MutableMapping,
-                    *sources: MutableMapping,
+                     *sources: MutableMapping,
                      on_conflict: Callable[..., Any] = take_last_value,
                      ) -> MutableMapping:
     """Update a dict with values from others
