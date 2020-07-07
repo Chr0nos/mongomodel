@@ -355,3 +355,9 @@ class TestDocument:
                 raise Book.DoesNotExist()
             except User.DoesNotExist:
                 pass
+
+    @no_database
+    @pytest.mark.parametrize('class_name', ('Book', 'Thing', 'Stuff'))
+    def test_collection_name_resolution(self, class_name):
+        x = type(class_name, (Document,), {})
+        assert x.get_collection().name == class_name.lower()
