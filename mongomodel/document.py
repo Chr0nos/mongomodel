@@ -15,6 +15,8 @@ class DocumentMeta(type):
         manager = getattr(instance, 'objects', None)
         if not manager:
             instance.objects = QuerySet(instance)
+        else:
+            manager.model = instance
 
         # declaration of thoses errors here to have proper errors per
         # documents kinds instead of global ones
@@ -49,6 +51,9 @@ class Document(metaclass=DocumentMeta):
         self._copy_fields()
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self}>'
 
     def _copy_fields(self) -> None:
         """Fields needs to be differents object from the main class declaration
