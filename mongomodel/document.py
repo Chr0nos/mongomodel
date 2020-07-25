@@ -12,6 +12,7 @@ class DocumentMeta(type):
     """
     def __new__(cls, name, bases, optdict):
         instance = super().__new__(cls, name, bases, optdict)
+        instance.db = db
         manager = getattr(instance, 'objects', None)
         if not manager:
             instance.objects = QuerySet(instance)
@@ -41,7 +42,6 @@ class Document(metaclass=DocumentMeta):
     collection: str = None
     fields: List[str] = []
     objects: QuerySet = None
-    db = db
 
     def __init__(self, collection=None, **kwargs):
         self._id = kwargs.pop('_id', None)
