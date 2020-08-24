@@ -1,8 +1,9 @@
 import pytest
 
 from bson import ObjectId
-from mock import patch, Mock
+from mock import patch, Mock, MagicMock
 from mongomodel.queryset import QuerySet, MissingModelError, TooManyResults
+from mongomodel.document import Document, Field
 
 
 class TestQuerySet:
@@ -138,3 +139,44 @@ class TestQuerySet:
         qs.model.DoesNotExist = Document.DoesNotExist
         with pytest.raises(Document.DoesNotExist):
             qs.get()
+
+    @pytest.mark.parametrize('class_name', ('Book', 'Thing', 'Stuff'))
+    def test_collection_name_resolution(self, class_name):
+        x = type(class_name, (Document,), {})
+        assert x.objects.get_collection().name == class_name.lower()
+
+    @patch('mongomodel.queryset.QuerySet._db')
+    def test_drop(self, mock_db):
+        mock_drop = mock_db.__getitem__.return_value.drop
+
+        class Test(Document):
+            collection = 'dropme'
+
+        Test.objects.drop()
+        mock_drop.assert_called_once()
+
+    @patch('mongomodel.queryset.QuerySet._db')
+    def test_find_raw(self, mock_db):
+        find: MagicMock = mock_db.__getitem__.return_value.find
+        find.return_value = None
+
+        class Test(Document):
+            collection = 'test'
+
+        Test.objects.find_raw()
+        find.assert_called_once()
+
+    @patch('mongomodel.queryset.QuerySet._db')
+    def test_find(self, mock_db):
+        class User(Document):
+            collection = 'user'
+            name = Field()
+
+        mock_db.__getitem__.return_value.find.return_value = (
+            {'name': 'seb', '_id': ObjectId()},
+            {'name': 'tom', '_id': ObjectId()}
+        )
+        seb, tom = User.objects.find()
+        assert seb.name == 'seb'
+        assert tom.name == 'tom'
+        assert seb._id != tom._id

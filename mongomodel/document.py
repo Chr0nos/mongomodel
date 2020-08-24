@@ -52,6 +52,11 @@ class Document(metaclass=DocumentMeta):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def __str__(self):
+        if self._id:
+            return str(self._id)
+        return ''
+
     def __repr__(self):
         return f'<{self.__class__.__name__}: {self}>'
 
@@ -107,7 +112,7 @@ class Document(metaclass=DocumentMeta):
         """
         if not self.is_valid():
             raise self.DocumentInvalid(self.invalid_fields())
-        collection = self.get_collection()
+        collection = self.objects.get_collection()
         document_content = self.to_dict()
         self.pre_save(document_content, self._id is None)
         if not self._id:
@@ -130,7 +135,7 @@ class Document(metaclass=DocumentMeta):
         """
         if self._id is None:
             return
-        response = self.get_collection().delete_one(
+        response = self.objects.get_collection().delete_one(
             {'_id': self._id}, session=session)
         self._id = None
         return response
@@ -141,8 +146,9 @@ class Document(metaclass=DocumentMeta):
         """
         if not self._id:
             raise ValueError('id')
-        response: dict = self.get_collection().find_one({'_id': self._id},
-                                                        session=session)
+
+        response = self.objects \
+            .get_collection().find_one({'_id': self._id}, session=session)
         self.update(**response)
         return self
 
@@ -177,7 +183,7 @@ class Document(metaclass=DocumentMeta):
     @classmethod
     def from_id(cls, document_id: ObjectId, collection=None) -> 'Document':
         collection = collection if collection else cls.collection
-        resource = cls.db[collection].find_one({'_id': document_id})
+        resource = cls.objects.get_collection().find_one({'_id': document_id})
         if not resource:
             raise cls.DoesNotExist(document_id)
         document = cls(**resource, collection=collection)
@@ -206,31 +212,6 @@ class Document(metaclass=DocumentMeta):
         for field_name in self.fields:
             yield field_name, getattr(self, field_name)
 
-    @classmethod
-    def find(cls, filter: dict = None, sort=None, limit=None, offset=None,
-             **kwargs) -> List['Document']:
-        cursor = cls.get_collection().find(filter=filter, **kwargs)
-        if offset:
-            cursor = cursor.skip(offset)
-        if limit:
-            cursor = cursor.limit(limit)
-        if sort:
-            cursor = cursor.sort(sort)
-        return [cls(**item) for item in cursor]
-
-    @classmethod
-    def find_raw(cls, search: dict = None) -> pymongo.cursor.Cursor:
-        """Peforms a search in the database in raw mode: no Document will be
-        created, all fields will be visible, use this for debugging purposes.
-        """
-        return cls.get_collection().find(search if search else {})
-
-    @classmethod
-    def get_collection(cls) -> pymongo.collection.Collection:
-        collection: str = getattr(cls, 'collection')
-        if not collection:
-            collection = cls.__name__.lower()
-        return cls.db[collection]
 
     @classmethod
     def insert_many(cls, documents: List['Document'],
@@ -241,7 +222,7 @@ class Document(metaclass=DocumentMeta):
         """
         insert_list = [doc for doc in documents if doc.is_valid()]
 
-        result = cls.get_collection().insert_many(
+        result = cls.objects.get_collection().insert_many(
             [doc.to_dict() for doc in insert_list],
             session=session
         )
@@ -251,16 +232,10 @@ class Document(metaclass=DocumentMeta):
         return insert_list
 
     @classmethod
-    def drop(cls, session=None) -> None:
-        """Drop the whole collection related to this class
-        """
-        cls.get_collection().drop(session=session)
-
-    @classmethod
     def delete_many(cls, documents: List['Document'],
                     session=None) -> List['Document']:
         doclist = dict({doc._id: doc for doc in documents})
-        cls.get_collection().delete_many(
+        cls.objects.get_collection().delete_many(
             {'_id': {'$in': list(doclist.keys())}},
             session=session
         )

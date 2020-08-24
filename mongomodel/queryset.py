@@ -1,6 +1,9 @@
 from typing import List, Any
 from .keywords import Eq, Neq, In, Nin, Gte, Lte, Gt, Lt, Exists, Regex
 from .tools import dict_deep_update, merge_values
+from . import db
+from pymongo.collection import Collection
+from pymongo.cursor import Cursor
 
 
 class MissingModelError(Exception):
@@ -30,9 +33,16 @@ class QuerySet:
     _sort = None
     _skip = None
     _limit = None
+    _db = db
 
     def __init__(self, model=None):
         self.model = model
+
+    def __str__(self):
+        return f'{self.query}'
+
+    def __repr__(self):
+        return f'<QuerySet: {self}>'
 
     def copy(self) -> 'QuerySet':
         instance = QuerySet(self.model)
@@ -40,6 +50,7 @@ class QuerySet:
         instance._sort = self._sort
         instance._skip = self._skip
         instance._limit = self._limit
+        instance._db = self._db
         return instance
 
     def sort(self, order):
@@ -121,7 +132,7 @@ class QuerySet:
             kwargs['offset'] = self._skip
         if self._limit:
             kwargs['limit'] = self._limit
-        for instance in self.model.find(filter=self.query, **kwargs):
+        for instance in self.find(filter=self.query, **kwargs):
             yield instance
 
     def count(self) -> int:
@@ -161,6 +172,15 @@ class QuerySet:
             return next(self.__iter__(**kwargs))
         except StopIteration:
             return None
+
+    def find_one(self, **kwargs):
+        if self._sort:
+            kwargs['sort'] = self._sort
+        if self._skip:
+            kwargs['offset'] = self._skip
+        if self._limit:
+            kwargs['limit'] = self._limit
+        return self.get_collection().find_one(self.query, **kwargs)
 
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
@@ -208,10 +228,28 @@ class QuerySet:
         ids = cursor.distinct('_id')
         return collection.delete_many({'_id': {'$in': ids}})
 
-    def apply(self, function, userdata=None):
-        """Apply the given `function` to each model in the queryset
-        it's possible to pass a custom `userdata` wich will be given to the
-        function at each call
+    def get_collection_name(self) -> str:
+        try:
+            collection_name = self.model.collection
+        except AttributeError:
+            pass
+
+        if not collection_name:
+            collection_name = self.model.__name__.lower()
+        return collection_name
+
+    def get_collection(self) -> Collection:
+        return self._db[self.get_collection_name()]
+
+    def drop(self):
+        return self.get_collection().drop()
+
+    def find_raw(self, search: dict = None) -> Cursor:
+        """Peforms a search in the database in raw mode: no Document will be
+        created, all fields will be visible, use this for debugging purposes.
         """
-        for document in self:
-            function(document, userdata)
+        return self.get_collection().find(search if search else {})
+
+    def find(self, filter: dict = None, **kwargs) -> List['Document']:
+        cursor = self.get_collection().find(filter=filter, **kwargs)
+        return [self.model(**item) for item in self._get_cursor(cursor)]

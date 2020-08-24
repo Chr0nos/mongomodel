@@ -13,7 +13,7 @@ def no_database(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with patch('mongomodel.document.Document.db.__getitem__') as collection:
+        with patch('mongomodel.queryset.QuerySet._db.__getitem__') as collection:
             collection.return_value = None
             func(*args, **kwargs)
     return wrapper
@@ -56,20 +56,20 @@ class TestDocument:
             missing.remove(field)
         assert not missing, missing
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_from_id(self, mock_db):
         test_dict = {'test': True}
         mock_db.__getitem__.return_value.find_one.return_value = test_dict
         doc = Document.from_id('test')
         assert isinstance(doc, Document)
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_from_unknow_id(self, mock_db):
         mock_db.__getitem__.return_value.find_one.return_value = None
         with pytest.raises(Document.DoesNotExist):
             Document.from_id('test')
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_save_new(self, mock_db):
         insert: MagicMock = mock_db.__getitem__.return_value.insert_one
         insert.return_value.inserted_id.return_value = 42
@@ -77,7 +77,7 @@ class TestDocument:
         doc.save()
         insert.assert_called_once_with({}, session=None)
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_save_old(self, mock_db):
         update: MagicMock = mock_db.__getitem__.return_value.update_one
         doc = Document(_id='test')
@@ -98,7 +98,7 @@ class TestDocument:
         doc = Document(collection='test')
         assert doc.delete() is None
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_delete_legit(self, mock_db):
         delete_one = mock_db.__getitem__.return_value.delete_one
         delete_one.return_value = True
@@ -113,7 +113,7 @@ class TestDocument:
         with pytest.raises(ValueError):
             doc.refresh()
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_refresh_legit(self, mock_db):
         find_one = mock_db.__getitem__.return_value.find_one
         find_one.return_value = {'test': True}
@@ -183,7 +183,7 @@ class TestDocument:
         doc.foo = InvalidField()
         assert doc.is_valid() is False
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_agnostic_retrive(self, db):
         response = {
             '_id': ObjectId(),
@@ -232,32 +232,6 @@ class TestDocument:
         assert original.age == 12
         assert cpy.age == 30
 
-    @patch('mongomodel.document.Document.db')
-    def test_find(self, mock_db):
-        class User(Document):
-            collection = 'user'
-            name = Field()
-
-        mock_db.__getitem__.return_value.find.return_value = (
-            {'name': 'seb', '_id': ObjectId()},
-            {'name': 'tom', '_id': ObjectId()}
-        )
-        seb, tom = User.find()
-        assert seb.name == 'seb'
-        assert tom.name == 'tom'
-        assert seb._id != tom._id
-
-    @patch('mongomodel.document.Document.db')
-    def test_find_raw(self, mock_db):
-        find: MagicMock = mock_db.__getitem__.return_value.find
-        find.return_value = None
-
-        class Test(Document):
-            collection = 'test'
-
-        Test.find_raw()
-        find.assert_called_once()
-
     @no_database
     def test_iter(self):
         class Test(Document):
@@ -267,16 +241,6 @@ class TestDocument:
 
         assert list(Test()) == [('a', 'a1'), ('b', 'b1')]
 
-    @patch('mongomodel.document.Document.db')
-    def test_drop(self, mock_db):
-        mock_drop = mock_db.__getitem__.return_value.drop
-
-        class Test(Document):
-            collection = 'dropme'
-
-        Test.drop()
-        mock_drop.assert_called_once()
-
     @pytest.mark.parametrize(
         'items_count, valids_count', (
             (10, 10),
@@ -284,7 +248,7 @@ class TestDocument:
             (10, 0),
         )
     )
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_insert_many(self, mock_db, items_count, valids_count):
         insert_many = mock_db.__getitem__.return_value.insert_many
 
@@ -312,7 +276,7 @@ class TestDocument:
         for doc in inserted:
             assert doc._id is not None
 
-    @patch('mongomodel.document.Document.db')
+    @patch('mongomodel.queryset.QuerySet._db')
     def test_delete_many(self, mock_db):
         delete_many = mock_db.__getitem__.return_value.delete_many
         delete_many.return_value = None
@@ -355,9 +319,3 @@ class TestDocument:
                 raise Book.DoesNotExist()
             except User.DoesNotExist:
                 pass
-
-    @no_database
-    @pytest.mark.parametrize('class_name', ('Book', 'Thing', 'Stuff'))
-    def test_collection_name_resolution(self, class_name):
-        x = type(class_name, (Document,), {})
-        assert x.get_collection().name == class_name.lower()
