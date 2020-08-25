@@ -15,7 +15,7 @@ then the in the code
 ```python
 import mongomodel
 
-mongomodel.setup_database(hostname='something', database='test')
+mongomodel.database.connect(host='something', db='test')
 # now you can use the orm.
 ```
 
@@ -190,7 +190,7 @@ with the `User` example
 from examples.user import User, mongomodel
 
 # setup the database
-mongomodel.setup_database('127.0.0.1', 'test')
+mongomodel.database.connect(host='127.0.0.1', db='test')
 
 # get all users, the .all() will iterate over ALL results and put them in a list
 User.objects.all()
@@ -219,4 +219,3 @@ a tupple of str like
 ```python
 qs = User.objects.sort(('-username', 'age'))
 ```
-
