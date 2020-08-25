@@ -17,7 +17,7 @@ class Database:
         return f'<Database: {self.client.HOST}: {self.db}>'
 
 
-main_database = Database()
+database = Database()
 
 from .field import Field, StringField, EmailField, RegexField, IntegerField, \
                    TypeField, FloatField, DateTimeField, BoolField

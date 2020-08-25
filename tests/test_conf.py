@@ -1,4 +1,4 @@
-from mongomodel import main_database
+from mongomodel import database
 from mock import patch
 
 
@@ -8,4 +8,4 @@ class TestConf:
         client_instance = object()
         mock_client.__getitem__ = lambda self: client_instance
 
-        main_database.connect(host='127.0.0.1', db='test')
+        database.connect(host='127.0.0.1', db='test')

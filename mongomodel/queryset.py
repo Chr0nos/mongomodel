@@ -1,7 +1,7 @@
 from typing import List, Any
 from .keywords import Eq, Neq, In, Nin, Gte, Lte, Gt, Lt, Exists, Regex
 from .tools import dict_deep_update, merge_values
-from . import main_database
+from . import database
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 
@@ -33,7 +33,7 @@ class QuerySet:
     _sort = None
     _skip = None
     _limit = None
-    _db = main_database
+    _db = database
 
     def __init__(self, model=None):
         self.model = model
