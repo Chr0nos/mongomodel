@@ -143,9 +143,9 @@ class TestQuerySet:
     @pytest.mark.parametrize('class_name', ('Book', 'Thing', 'Stuff'))
     def test_collection_name_resolution(self, class_name):
         x = type(class_name, (Document,), {})
-        assert x.objects.get_collection().name == class_name.lower()
+        assert x.objects.get_collection_name() == class_name.lower()
 
-    @patch('mongomodel.queryset.QuerySet._db')
+    @patch('mongomodel.queryset.QuerySet._db.db')
     def test_drop(self, mock_db):
         mock_drop = mock_db.__getitem__.return_value.drop
 
@@ -155,7 +155,7 @@ class TestQuerySet:
         Test.objects.drop()
         mock_drop.assert_called_once()
 
-    @patch('mongomodel.queryset.QuerySet._db')
+    @patch('mongomodel.queryset.QuerySet._db.db')
     def test_find_raw(self, mock_db):
         find: MagicMock = mock_db.__getitem__.return_value.find
         find.return_value = None
@@ -166,7 +166,7 @@ class TestQuerySet:
         Test.objects.find_raw()
         find.assert_called_once()
 
-    @patch('mongomodel.queryset.QuerySet._db')
+    @patch('mongomodel.queryset.QuerySet._db.db')
     def test_find(self, mock_db):
         class User(Document):
             collection = 'user'

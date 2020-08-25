@@ -2,7 +2,7 @@ from typing import List
 from bson import ObjectId
 import pymongo
 
-from . import db, Field
+from . import Field
 from .queryset import QuerySet
 
 
@@ -12,7 +12,6 @@ class DocumentMeta(type):
     """
     def __new__(cls, name, bases, optdict):
         instance = super().__new__(cls, name, bases, optdict)
-        instance.db = db
         manager = getattr(instance, 'objects', None)
         if not manager:
             instance.objects = QuerySet(instance)
@@ -51,6 +50,7 @@ class Document(metaclass=DocumentMeta):
         self._copy_fields()
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
     def __str__(self):
         if self._id:
