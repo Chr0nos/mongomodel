@@ -35,8 +35,10 @@ class QuerySet:
     _limit = None
     _db = database
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, database=None):
         self.model = model
+        if database:
+            self._db = database
 
     def __str__(self):
         return f'{self.query}'
@@ -146,7 +148,7 @@ class QuerySet:
     def raw(self, **kwargs):
         if not self.model:
             raise MissingModelError
-        cursor = self.model.find_raw(self.query, **kwargs)
+        cursor = self.find_raw(self.query, **kwargs)
         return self._get_cursor(cursor)
 
     def raw_all(self, **kwargs):
@@ -184,7 +186,7 @@ class QuerySet:
 
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
-        search = list(self.model.find_raw(instance.query).limit(2))
+        search = list(self.find_raw(instance.query).limit(2))
         count = len(search)
         if count > 1:
             raise TooManyResults('too many items received')
@@ -223,7 +225,7 @@ class QuerySet:
     def delete(self):
         if not self.model:
             raise MissingModelError
-        collection = self.model.get_collection()
+        collection = self.get_collection()
         cursor = self._get_cursor(collection.find(self.query))
         ids = cursor.distinct('_id')
         return collection.delete_many({'_id': {'$in': ids}})

@@ -8,7 +8,7 @@ def get_long_description() -> str:
 
 setuptools.setup(
     name='mongomodel',
-    version='0.4.2',
+    version='0.4.3',
     scripts=[],
     author="Sébastien Nicolet",
     author_email="snicolet@student.42.fr",
