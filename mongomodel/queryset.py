@@ -140,7 +140,7 @@ class QuerySet:
     def count(self) -> int:
         if not self.model:
             raise MissingModelError
-        return self.model.get_collection().count_documents(self.query)
+        return self.get_collection().count_documents(self.query)
 
     def all(self, **kwargs) -> List['Document']:
         return list(self.__iter__(**kwargs))
@@ -206,7 +206,7 @@ class QuerySet:
     def distinct(self, key: str, **kwargs) -> List[Any]:
         if not self.model:
             raise MissingModelError
-        return self.model.get_collection().distinct(
+        return self.get_collection().distinct(
             key=key, query=self.query, **kwargs)
 
     @staticmethod

@@ -37,10 +37,11 @@ class TestQuerySet:
         assert lst == [('date', 1), ('age', -1), ('a', 1), ('b', -1)]
 
     def test_count(self):
-        fake_model = Mock()
-        count = fake_model.get_collection.return_value.count_documents
+        fake_db = MagicMock()
+        count = fake_db.db.__getitem__.return_value.count_documents
         count.return_value = 1234
-        response = QuerySet(fake_model).count()
+
+        response = QuerySet(Mock(), fake_db).count()
         assert response == 1234
         count.assert_called_once()
 
