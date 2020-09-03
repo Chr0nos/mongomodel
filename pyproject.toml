@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mongomodel"
-version = "0.4.6"
+version = "0.4.7"
 description = "Tiny mongodb orm document oriented"
 authors = ["Sébastien NICOLET <snicolet@student.42.fr>"]
 license = "MIT"
