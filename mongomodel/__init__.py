@@ -22,4 +22,3 @@ database = Database()
 from .field import Field, StringField, EmailField, RegexField, IntegerField, \
                    TypeField, FloatField, DateTimeField, BoolField
 from .document import Document, QuerySet
-from .conf import setup_database
