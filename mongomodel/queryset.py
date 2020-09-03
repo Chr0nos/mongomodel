@@ -244,14 +244,42 @@ class QuerySet:
         return self._db.db[self.get_collection_name()]
 
     def drop(self):
+        """Drop the whole collection regardless from query/sort/limit or any
+        kind of filtering
+        """
         return self.get_collection().drop()
 
-    def find_raw(self, search: dict = None) -> Cursor:
+    def find_raw(self, search: dict = None, **kwargs) -> Cursor:
         """Peforms a search in the database in raw mode: no Document will be
         created, all fields will be visible, use this for debugging purposes.
         """
-        return self.get_collection().find(search if search else {})
+        return self.get_collection().find(search if search else {}, **kwargs)
 
     def find(self, filter: dict = None, **kwargs) -> List['Document']:
         cursor = self.get_collection().find(filter=filter, **kwargs)
         return [self.model(**item) for item in self._get_cursor(cursor)]
+
+    def create(self, *args, **kwargs):
+        """Create a new instance of the model with the given argument and save
+        it into the database.
+
+        >>> Document.objects.create(...)
+        Document(*args, **kwargs)
+        """
+        instance: self.model = self.model(*args, **kwargs)
+        instance.save()
+        return instance
+
+    def values_list(self, fields: List[str], flat=False, noid=False):
+        if isinstance(fields, str):
+            fields = (fields,)
+        projection = {f: True for f in fields}
+        if noid:
+            projection['_id'] = False
+        if not flat:
+            return list(self.find_raw(projection=projection))
+        assert len(fields) == 1, 'You can only have one field using flat=True'
+        field_name = fields[0]
+        return list([
+            value[field_name] for value in self.find_raw(projection=projection)
+        ])
