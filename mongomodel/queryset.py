@@ -204,7 +204,7 @@ class QuerySet:
     def distinct(self, key: str, **kwargs) -> List[Any]:
         if not self.model:
             raise MissingModelError
-        return self.model.get_collection().distinct(
+        return self.get_collection().distinct(
             key=key, query=self.query, **kwargs)
 
     @staticmethod
@@ -221,9 +221,7 @@ class QuerySet:
         return [generate_tuple(word) for word in order]
 
     def delete(self):
-        if not self.model:
-            raise MissingModelError
-        collection = self.model.get_collection()
+        collection = self.get_collection()
         cursor = self._get_cursor(collection.find(self.query))
         ids = cursor.distinct('_id')
         return collection.delete_many({'_id': {'$in': ids}})

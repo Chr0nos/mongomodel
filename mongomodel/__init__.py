@@ -16,6 +16,9 @@ class Database:
     def __repr__(self):
         return f'<Database: {self.client.HOST}: {self.db}>'
 
+    def update_queryset(self, queryset):
+        queryset._db = self
+
 
 database = Database()
 
