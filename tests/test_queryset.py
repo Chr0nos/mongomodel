@@ -37,30 +37,28 @@ class TestQuerySet:
         assert lst == [('date', 1), ('age', -1), ('a', 1), ('b', -1)]
 
     def test_count(self):
-        fake_model = Mock()
-        count = fake_model.get_collection.return_value.count_documents
+        fake_db = MagicMock()
+        count = fake_db.db.__getitem__.return_value.count_documents
         count.return_value = 1234
-        response = QuerySet(fake_model).count()
+
+        response = QuerySet(Mock(), fake_db).count()
         assert response == 1234
         count.assert_called_once()
 
     def test_raw(self):
-        cursor = Mock()
-        cursor.sort.return_value = cursor
-        cursor.limit.return_value = cursor
-        cursor.skip.return_value = cursor
+        cursor = MagicMock()
 
-        model = Mock()
-        model.find_raw.return_value = cursor
+        fake_db = MagicMock()
+        fake_db.db.__getitem__.return_value.find.return_value = cursor
 
-        qs = QuerySet(model)
-        qs._get_cursor = Mock()
-        qs._get_cursor.return_value = cursor
-        assert qs.sort(['name']).limit(3).skip(1).raw() == cursor
+        qs = QuerySet(Mock(), fake_db)
+        assert qs.find_raw() == fake_db.db.__getitem__().find()
 
-        cursor.sort.assert_called()
-        cursor.limit.assert_called_with(3)
-        cursor.skip.assert_called_with(1)
+        output_qs = qs.sort(['name']).limit(3).skip(1)
+        assert output_qs.raw() == cursor.sort().skip().limit()
+        assert output_qs._limit == 3
+        assert output_qs._sort == [('name', 1)]
+        assert output_qs._skip == 1
 
     def test_raw_without_model(self):
 
@@ -117,7 +115,8 @@ class TestQuerySet:
     def test_get_normal(self):
         obj = {'_id': ObjectId()}
         qs = QuerySet(Mock())
-        qs.model.find_raw.return_value.limit.return_value = [obj]
+        qs.find_raw = Mock()
+        qs.find_raw.return_value.limit.return_value = [obj]
         instance = qs.get(_id=obj['_id'])
         qs.model.assert_called_with(**obj)
 
@@ -127,7 +126,8 @@ class TestQuerySet:
             {'_id': ObjectId()}
         ]
         qs = QuerySet(Mock())
-        qs.model.find_raw.return_value.limit.return_value = results
+        qs.find_raw = Mock()
+        qs.find_raw.return_value.limit.return_value = results
         with pytest.raises(TooManyResults):
             qs.get()
 
@@ -135,7 +135,8 @@ class TestQuerySet:
         from mongomodel.document import Document
 
         qs = QuerySet(Mock())
-        qs.model.find_raw.return_value.limit.return_value = []
+        qs.find_raw = Mock()
+        qs.find_raw.return_value.limit.return_value = []
         qs.model.DoesNotExist = Document.DoesNotExist
         with pytest.raises(Document.DoesNotExist):
             qs.get()

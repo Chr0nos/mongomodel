@@ -14,7 +14,7 @@ class TooManyResults(Exception):
     pass
 
 
-class QuerySet:
+class QuerysetBase:
     query = {}
     # must be a Model class, not an instance
     model = None
@@ -35,14 +35,16 @@ class QuerySet:
     _limit = None
     _db = database
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, database=None):
         self.model = model
+        if database:
+            self._db = database
 
     def __str__(self):
         return f'{self.query}'
 
     def __repr__(self):
-        return f'<QuerySet: {self}>'
+        return f'<{self.__class__.__name__}: {self}>'
 
     def copy(self) -> 'QuerySet':
         instance = QuerySet(self.model)
@@ -123,7 +125,98 @@ class QuerySet:
                 pass
         return path, raw_value
 
+    def __iter__(self):
+        raise NotImplementedError
+
+    def __add__(self, b: 'QuerySet') -> 'QuerySet':
+        instance = self.copy()
+        dict_deep_update(instance.query, b.query, on_conflict=merge_values)
+        if not instance.model and b.model:
+            instance.model = b.model
+        return instance
+
+    @staticmethod
+    def sort_instruction(order: List[str]) -> List[tuple]:
+        """Convert a list for format:
+        ['name', '-age'] to:
+        [('name': 1), ('age': -1)]
+        """
+        def generate_tuple(word) -> tuple:
+            if word.startswith('-'):
+                return (word[1:], -1)
+            return (word, 1)
+
+        return [generate_tuple(word) for word in order]
+
+    def get_collection_name(self) -> str:
+        try:
+            collection_name = self.model.collection
+        except AttributeError:
+            pass
+
+        if not collection_name:
+            collection_name = self.model.__name__.lower()
+        return collection_name
+
+    def count(self):
+        raise NotImplementedError
+
+    def create(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def raw(self, **kwargs):
+        raise NotImplementedError
+
+    def raw_all(self, **kwargs):
+        raise NotImplementedError
+
+    def all(self, **kwargs):
+        raise NotImplementedError
+
+    def first(self, **kwargs):
+        raise NotImplementedError
+
+    def find_one(self, **kwargs):
+        raise NotImplementedError
+
+    def find(self, filter: dict = None, **kwargs):
+        raise NotImplementedError
+
+    def get(self, **kwargs):
+        raise NotImplementedError
+
+    def distinct(self, key: str, **kwargs):
+        raise NotImplementedError
+
+    def delete(self):
+        raise NotImplementedError
+
+    def drop(self):
+        raise NotImplementedError
+
+    def values_list(self, fields: List[str], flat=False, noid=False):
+        raise NotImplementedError
+
+
+class QuerySet(QuerysetBase):
+    """The QuetySet is the bridge between mongodb and the models creation
+    eveyrthing in that class should not be related to one model but to `any` of
+    them.
+
+    This class implement the synchrone implementation with `pymongo`
+
+    it handle:
+    - sort
+    - limit
+    - offset
+    - query
+
+    you can override this class by creating one who inherit from it and put it
+    into `model.manager_class` attribute.
+    """
     def __iter__(self, **kwargs):
+        """Iterate over the matching models instances
+        """
         if not self.model:
             raise MissingModelError
         if self._sort:
@@ -136,9 +229,12 @@ class QuerySet:
             yield instance
 
     def count(self) -> int:
+        """Return the amount of matching elements.
+        sort/limit/offset are ignored
+        """
         if not self.model:
             raise MissingModelError
-        return self.model.get_collection().count_documents(self.query)
+        return self.get_collection().count_documents(self.query)
 
     def all(self, **kwargs) -> List['Document']:
         return list(self.__iter__(**kwargs))
@@ -146,7 +242,7 @@ class QuerySet:
     def raw(self, **kwargs):
         if not self.model:
             raise MissingModelError
-        cursor = self.model.find_raw(self.query, **kwargs)
+        cursor = self.find_raw(self.query, **kwargs)
         return self._get_cursor(cursor)
 
     def raw_all(self, **kwargs):
@@ -184,7 +280,7 @@ class QuerySet:
 
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
-        search = list(self.model.find_raw(instance.query).limit(2))
+        search = list(self.find_raw(instance.query).limit(2))
         count = len(search)
         if count > 1:
             raise TooManyResults('too many items received')
@@ -194,60 +290,62 @@ class QuerySet:
         model_instance = self.model(**search[0])
         return model_instance
 
-    def __add__(self, b: 'QuerySet') -> 'QuerySet':
-        instance = self.copy()
-        dict_deep_update(instance.query, b.query, on_conflict=merge_values)
-        if not instance.model and b.model:
-            instance.model = b.model
-        return instance
-
     def distinct(self, key: str, **kwargs) -> List[Any]:
         if not self.model:
             raise MissingModelError
         return self.get_collection().distinct(
             key=key, query=self.query, **kwargs)
 
-    @staticmethod
-    def sort_instruction(order: List[str]) -> List[tuple]:
-        """Convert a list for format:
-        ['name', '-age'] to:
-        [('name': 1), ('age': -1)]
-        """
-        def generate_tuple(word) -> tuple:
-            if word.startswith('-'):
-                return (word[1:], -1)
-            return (word, 1)
-
-        return [generate_tuple(word) for word in order]
-
     def delete(self):
+        if not self.model:
+            raise MissingModelError
         collection = self.get_collection()
         cursor = self._get_cursor(collection.find(self.query))
         ids = cursor.distinct('_id')
         return collection.delete_many({'_id': {'$in': ids}})
 
-    def get_collection_name(self) -> str:
-        try:
-            collection_name = self.model.collection
-        except AttributeError:
-            pass
-
-        if not collection_name:
-            collection_name = self.model.__name__.lower()
-        return collection_name
-
     def get_collection(self) -> Collection:
         return self._db.db[self.get_collection_name()]
 
     def drop(self):
+        """Drop the whole collection regardless from query/sort/limit or any
+        kind of filtering
+        """
         return self.get_collection().drop()
 
-    def find_raw(self, search: dict = None) -> Cursor:
+    def find_raw(self, search: dict = None, **kwargs) -> Cursor:
         """Peforms a search in the database in raw mode: no Document will be
         created, all fields will be visible, use this for debugging purposes.
         """
-        return self.get_collection().find(search if search else {})
+        return self.get_collection().find(search if search else {}, **kwargs)
 
     def find(self, filter: dict = None, **kwargs) -> List['Document']:
         cursor = self.get_collection().find(filter=filter, **kwargs)
         return [self.model(**item) for item in self._get_cursor(cursor)]
+
+    def create(self, *args, **kwargs):
+        """Create a new instance of the model with the given argument and save
+        it into the database.
+
+        >>> Document.objects.create(...)
+        Document(*args, **kwargs)
+        """
+        instance: self.model = self.model(*args, **kwargs)
+        instance.save()
+        return instance
+
+    def values_list(self, fields: List[str], flat=False, noid=False):
+        if isinstance(fields, str):
+            fields = (fields,)
+        projection = {f: True for f in fields}
+        if noid:
+            projection['_id'] = False
+
+        cursor = self._get_cursor(self.find_raw(projection=projection))
+        if not flat:
+            return list(cursor)
+        assert len(fields) == 1, 'You can only have one field using flat=True'
+        field_name = fields[0]
+        return list([
+            value[field_name] for value in cursor
+        ])

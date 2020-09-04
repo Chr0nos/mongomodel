@@ -12,11 +12,10 @@ class DocumentMeta(type):
     """
     def __new__(cls, name, bases, optdict):
         instance = super().__new__(cls, name, bases, optdict)
-        manager = getattr(instance, 'objects', None)
-        if not manager:
-            instance.objects = QuerySet(instance)
-        else:
-            manager.model = instance
+
+        manager_class = getattr(instance, 'manager_class', None)
+        instance.objects = QuerySet(instance) if not manager_class \
+            else manager_class(instance)
 
         # declaration of thoses errors here to have proper errors per
         # documents kinds instead of global ones
@@ -50,7 +49,6 @@ class Document(metaclass=DocumentMeta):
         self._copy_fields()
         for key, value in kwargs.items():
             setattr(self, key, value)
-
 
     def __str__(self):
         if self._id:
@@ -211,7 +209,6 @@ class Document(metaclass=DocumentMeta):
     def __iter__(self):
         for field_name in self.fields:
             yield field_name, getattr(self, field_name)
-
 
     @classmethod
     def insert_many(cls, documents: List['Document'],
