@@ -52,10 +52,9 @@ class TestQuerySet:
         fake_db.db.__getitem__.return_value.find.return_value = cursor
 
         qs = QuerySet(Mock(), fake_db)
-        assert qs.find_raw() == fake_db.db.__getitem__().find()
+        assert qs.raw() == fake_db.db.__getitem__().find()
 
         output_qs = qs.sort(['name']).limit(3).skip(1)
-        assert output_qs.raw() == cursor.sort().skip().limit()
         assert output_qs._limit == 3
         assert output_qs._sort == [('name', 1)]
         assert output_qs._skip == 1
@@ -164,7 +163,7 @@ class TestQuerySet:
         class Test(Document):
             collection = 'test'
 
-        Test.objects.find_raw()
+        Test.objects.raw()
         find.assert_called_once()
 
     @patch('mongomodel.queryset.QuerySet._db.db')

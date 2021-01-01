@@ -242,7 +242,7 @@ class QuerySet(QuerysetBase):
     def raw(self, **kwargs):
         if not self.model:
             raise MissingModelError
-        cursor = self.find_raw(self.query, **kwargs)
+        cursor = self.get_collection().find(self.query, **kwargs)
         return self._get_cursor(cursor)
 
     def raw_all(self, **kwargs):
@@ -278,9 +278,13 @@ class QuerySet(QuerysetBase):
             kwargs['limit'] = self._limit
         return self.get_collection().find_one(self.query, **kwargs)
 
+    def find_raw(self, **kwargs) -> Cursor:
+        cursor = self.get_collection().find(filter=self.query, **kwargs)
+        return cursor
+
     def get(self, **kwargs):
         instance = self.filter(**kwargs) if kwargs else self
-        search = list(self.find_raw(instance.query).limit(2))
+        search = list(instance.find_raw().limit(2))
         count = len(search)
         if count > 1:
             raise TooManyResults('too many items received')
@@ -313,14 +317,8 @@ class QuerySet(QuerysetBase):
         """
         return self.get_collection().drop()
 
-    def find_raw(self, search: dict = None, **kwargs) -> Cursor:
-        """Peforms a search in the database in raw mode: no Document will be
-        created, all fields will be visible, use this for debugging purposes.
-        """
-        return self.get_collection().find(search if search else {}, **kwargs)
-
     def find(self, filter: dict = None, **kwargs) -> List['Document']:
-        cursor = self.get_collection().find(filter=filter, **kwargs)
+        cursor = self.find_raw(**kwargs)
         return [self.model(**item) for item in self._get_cursor(cursor)]
 
     def create(self, *args, **kwargs):
@@ -341,7 +339,7 @@ class QuerySet(QuerysetBase):
         if noid:
             projection['_id'] = False
 
-        cursor = self._get_cursor(self.find_raw(projection=projection))
+        cursor = self.raw(projection=projection)
         if not flat:
             return list(cursor)
         assert len(fields) == 1, 'You can only have one field using flat=True'
