@@ -289,7 +289,6 @@ class QuerySet(QuerysetBase):
         if count > 1:
             raise TooManyResults('too many items received')
         if count == 0:
-            # raise DocumentNotFoundError(instance.query)
             raise self.model.DoesNotExist(instance.query)
         model_instance = self.model(**search[0])
         return model_instance

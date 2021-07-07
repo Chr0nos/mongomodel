@@ -111,13 +111,14 @@ class TestQuerySet:
         assert qs.query['age']['$lt'] == 40
         assert qs.query['age']['nested']['$eq'] == 10
 
-    def test_get_normal(self):
+    @patch('mongomodel.queryset.QuerySet.find_raw')
+    def test_get_normal(self, mock_find_raw):
         obj = {'_id': ObjectId()}
-        qs = QuerySet(Mock())
-        qs.find_raw = Mock()
-        qs.find_raw.return_value.limit.return_value = [obj]
-        instance = qs.get(_id=obj['_id'])
-        qs.model.assert_called_with(**obj)
+        qs = QuerySet(MagicMock())
+        mock_find_raw.return_value.limit.return_value = [obj]
+        qs.get_collection = lambda self: Mock()
+        qs.get(_id=obj['_id'])
+        mock_find_raw.assert_called()
 
     def test_get_too_many_results(self):
         results = [
