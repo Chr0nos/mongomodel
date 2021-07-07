@@ -5,11 +5,9 @@ Each database entry is a `Document` and each document has `Fields`
 
 ## Getting started
 ```shell
-git clone git@github.com:Chr0nos/mongomodel.git
-virtualenv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+pip install mongomodel
 ```
+
 
 then the in the code
 ```python
@@ -219,3 +217,13 @@ a tupple of str like
 ```python
 qs = User.objects.sort(('-username', 'age'))
 ```
+
+
+### Just get the first matching element
+```python
+me = User.objects.first()
+```
+
+in this case the `me` will be `None` if the collection is empty.
+
+there is no `.last` method, just invert the ordering and take the first.
